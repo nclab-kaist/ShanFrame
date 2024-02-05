@@ -4,7 +4,6 @@ from operand import Operand, ElementOperand
 
 
 class Expression(ABCMeta):
-    indent: int
     result: ElementOperand
 
     @abstractclassmethod
@@ -12,23 +11,48 @@ class Expression(ABCMeta):
         pass
 
     @abstractclassmethod
-    def to_str(self) -> str:
+    def to_str(self, indent: int) -> str:
         pass
 
 
-class FiniteLoop(Expression):
+class ExpressionGroup(Expression):
+    result: ElementOperand
+    content: list[Expression]
+
+    def __init__(self, content: list[Expression] = None):
+        self.result = None
+        if content is None:
+            self.content = list()
+        else:
+            self.content = content
+
+    def uses_operand(self, operand: Operand) -> bool:
+        for expression in self.content:
+            if expression.uses_operand(operand):
+                return True
+        return False
+
+    def to_str(self, indent: int) -> str:
+        # TODO: implement to_str for ExpressionGroup
+        raise SystemExit("not implemented")
+
+
+class FiniteLoop(ExpressionGroup):
+    result: ElementOperand
     index: ElementOperand
     step: int
     range: range
     unroll_level: int
-    base_content: list[Expression]
+    content: list[Expression]
 
     def __init__(self,
+                 indent: int,
                  range: range,
                  base_content: list[Expression] = None,
                  step: int = 1,
                  unroll_level: int = 1
                  ) -> None:
+        self.result = None
         self.index = ElementOperand.new_int(32)
         self.step = step
         self.range = range
@@ -37,6 +61,16 @@ class FiniteLoop(Expression):
             self.base_content = list()
         else:
             self.base_content = base_content
+
+    def uses_operand(self, operand: Operand) -> bool:
+        for expression in self.base_content:
+            if expression.uses_operand(operand):
+                return True
+        return False
+
+    def to_str(self, indent: int) -> str:
+        # TODO: implement to_str for FiniteExpression
+        raise SystemExit("not implemented")
 
 
 class BinaryOperator(Enum):
@@ -49,7 +83,9 @@ class BinaryOperator(Enum):
     SADD8 = 7
     SADD16 = 8
 
+
 class BinaryExpression(Expression):
+    result: ElementOperand
     operator: BinaryOperator
     left_operand: Operand
     right_operand: ElementOperand
@@ -67,6 +103,13 @@ class BinaryExpression(Expression):
         # TODO: generate the result of an expression,
         pass
 
+    def uses_operand(self, operand: Operand) -> bool:
+        return self.left_operand == operand or self.right_operand == operand
+
+    def to_str(self, indent: int) -> str:
+        # TODO: implement to_str for BinaryExpression
+        raise SystemExit("not implemented")
+
 
 class UnaryOperator(Enum):
     TypeCast = 1
@@ -79,9 +122,9 @@ class UnaryOperator(Enum):
 
 
 class UnaryExpression(Expression):
+    result: ElementOperand
     operator: UnaryOperator
     operand: ElementOperand
-    result: ElementOperand
 
     def __init__(self,
                  operator: UnaryOperator,
@@ -93,3 +136,10 @@ class UnaryExpression(Expression):
     def _generate_result(self) -> None:
         # TODO: generate the result of this expression
         pass
+
+    def uses_operand(self, operand: Operand) -> bool:
+        return self.operand == operand
+
+    def to_str(self, indent: int) -> str:
+        # TODO: implement to_str for UnaryExpression
+        raise SystemExit("not implemented")

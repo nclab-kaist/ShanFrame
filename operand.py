@@ -1,6 +1,5 @@
-from abc import ABCMeta, abstractclassmethod
+from abc import ABCMeta, abstractmethod
 from typing import Any, Self
-from enum import Enum
 from sys import float_info
 from expression import Expression
 
@@ -11,7 +10,7 @@ class ElementType:
     is_int: bool
     bit_length: int
 
-    def __init__(self, is_int, bit_length) -> None:
+    def __init__(self, is_int: bool, bit_length: int) -> None:
         self.is_int = is_int
         self.bit_length = bit_length
 
@@ -19,9 +18,9 @@ class ElementType:
 class Operand(ABCMeta):
     name: str
 
-    @abstractclassmethod
+    @abstractmethod
     def print(self) -> str:
-        pass
+        raise NotImplementedError("Operand.print")
 
 
 class ElementOperand(Operand):
@@ -30,20 +29,26 @@ class ElementOperand(Operand):
     max_value: float
     min_value: float
     source: Expression
+    
+    # def __new__(self, is_int: bool, bit_length: int) -> None:
+    #     self.type = ElementType(is_int, bit_length)
 
-    def __init__(self, is_int: bool, bit_length: int):
+    def __init__(self, is_int: bool, bit_length: int) -> None:
         self.type = ElementType(is_int, bit_length)
+    
+    @classmethod
+    def new_int_value(cls, bit_len: int, value: int) -> Self:
+        new_int = ElementOperand(True, bit_len)
+        new_int.max_value = float(value)
+        new_int.min_value = float(value)
+        return new_int
 
     @classmethod
-    def new_int(cls, bit_len: int, value: int = None) -> Self:
+    def new_int(cls, bit_len: int) -> Self:
         new_int = ElementOperand(True, bit_len)
-        if value == None:
-            value_max: int = (1 << bit_len) - 1
-            new_int.max_value = float(value_max)
-            new_int.min_value = float(-value_max - 1)
-        else:
-            new_int.max_value = float(value)
-            new_int.min_value = float(value)
+        value_max: int = (1 << bit_len) - 1
+        new_int.max_value = float(value_max)
+        new_int.min_value = float(-value_max - 1)
         return new_int
 
     @classmethod
