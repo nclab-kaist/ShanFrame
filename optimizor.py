@@ -25,11 +25,11 @@ class Optimizor:
         raise SystemExit("not implemented")
     
     def optimize(self) -> bool:
-        
         # get all options
         for optimization in self.optimizations:
-            self.options.append(optimization.get_optimization_options(self.model))
+            self.options += optimization.get_optimization_options(self.model)
         picked_opt = self.pick_option()
         new_model = picked_opt.do_optimization(self.model)
         estimate_result = estimate_model(new_model)
+        raise SystemExit("not implemented")
         

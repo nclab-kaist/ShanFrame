@@ -1,28 +1,28 @@
 from typing import Any, Self
-from abc import abstractclassmethod, ABCMeta
+from abc import abstractmethod, ABC
 from model import Model
 
 
-class OptimizationOption(metaClass=ABCMeta):
-    @abstractclassmethod
+class OptimizationOption(ABC):
+    @abstractmethod
     def estimate_flash_overhead(self) -> int:
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def estimate_sram_overhead(self) -> int:
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def estimate_latency_overhead(self) -> int:
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def do_optimization(self, model: Model) -> Model:
         pass
 
 
-class Optimization(ABCMeta):
-    @abstractclassmethod
+class Optimization(ABC):
+    @abstractmethod
     def get_optimization_options(self, model: Model) -> list[OptimizationOption]:
         pass
 

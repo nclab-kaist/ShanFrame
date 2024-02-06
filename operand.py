@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any, Self
 from sys import float_info
 from expression import Expression
@@ -15,8 +15,8 @@ class ElementType:
         self.bit_length = bit_length
 
 
-class Operand(ABCMeta):
-    name: str
+class Operand(ABC):
+    name: str | None
 
     @abstractmethod
     def print(self) -> str:
@@ -24,42 +24,40 @@ class Operand(ABCMeta):
 
 
 class ElementOperand(Operand):
-    name: str = ""
+    name: str | None = None
     type: ElementType
     max_value: float
     min_value: float
-    source: Expression
-    
-    # def __new__(self, is_int: bool, bit_length: int) -> None:
-    #     self.type = ElementType(is_int, bit_length)
+    source: Expression | None = None
 
     def __init__(self, is_int: bool, bit_length: int) -> None:
         self.type = ElementType(is_int, bit_length)
     
     @classmethod
     def new_int_value(cls, bit_len: int, value: int) -> Self:
-        new_int = ElementOperand(True, bit_len)
+        new_int = cls(True, bit_len)
         new_int.max_value = float(value)
         new_int.min_value = float(value)
         return new_int
 
     @classmethod
     def new_int(cls, bit_len: int) -> Self:
-        new_int = ElementOperand(True, bit_len)
+        new_int = cls(True, bit_len)
         value_max: int = (1 << bit_len) - 1
         new_int.max_value = float(value_max)
         new_int.min_value = float(-value_max - 1)
         return new_int
 
     @classmethod
-    def new_float(cls, bit_len: int, value: float = None) -> Self:
-        new_float = ElementOperand(False, bit_len)
+    def new_float(cls, bit_len: int, value: float | None = None) -> Self:
+        new_float = cls(False, bit_len)
         if value == None:
             new_float.max_value = float_info.max
             new_float.min_value = float_info.min
         else:
             new_float.max_value = value
             new_float.min_value = value
+        return new_float
 
     def has_known_value(self) -> bool:
         return self.max_value == self.min_value
@@ -68,13 +66,13 @@ class ElementOperand(Operand):
         value: float = self.max_value
         if value != self.min_value:
             return None
-        if self.is_int:
+        if self.type.is_int:
             return int(value)
         return value
 
     def value_bit_length(self) -> int:
-        if self.is_int:
-            return self.type_bit_length
+        if self.type.is_int:
+            return self.type.bit_length
         max_value = int(self.max_value)
         min_value = int(self.min_value)
         return max(
@@ -85,7 +83,7 @@ class ElementOperand(Operand):
     def print(self) -> str:
         value = self._get_known_value()
         if value is None:
-            return self.name
+            return str(self.name)
         else:
             return str(value)
 

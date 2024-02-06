@@ -1,25 +1,25 @@
 from enum import Enum
-from abc import ABCMeta, abstractclassmethod
+from abc import ABC, abstractmethod
 from operand import Operand, ElementOperand
 
 
-class Expression(ABCMeta):
+class Expression(ABC):
     result: ElementOperand
 
-    @abstractclassmethod
+    @abstractmethod
     def uses_operand(self, operand: Operand) -> bool:
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def to_str(self, indent: int) -> str:
         pass
 
 
 class ExpressionGroup(Expression):
-    result: ElementOperand
+    result: ElementOperand | None
     content: list[Expression]
 
-    def __init__(self, content: list[Expression] = None):
+    def __init__(self, content: list[Expression] | None = None):
         self.result = None
         if content is None:
             self.content = list()
@@ -38,24 +38,24 @@ class ExpressionGroup(Expression):
 
 
 class FiniteLoop(ExpressionGroup):
-    result: ElementOperand
+    result: ElementOperand | None
     index: ElementOperand
     step: int
-    range: range
+    loop_range: range
     unroll_level: int
     content: list[Expression]
 
     def __init__(self,
                  indent: int,
                  range: range,
-                 base_content: list[Expression] = None,
+                 base_content: list[Expression] | None = None,
                  step: int = 1,
                  unroll_level: int = 1
                  ) -> None:
         self.result = None
         self.index = ElementOperand.new_int(32)
         self.step = step
-        self.range = range
+        self.loop_range = range
         self.unroll_level = unroll_level
         if base_content is None:
             self.base_content = list()
