@@ -8,11 +8,11 @@ class Expression(ABC):
 
     @abstractmethod
     def uses_operand(self, operand: Operand) -> bool:
-        pass
+        raise NotImplemented("Expression.use_operand")
 
     @abstractmethod
     def to_str(self, indent: int) -> str:
-        pass
+        raise NotImplemented("Expression.to_str")
 
 
 class ExpressionGroup(Expression):
@@ -34,10 +34,10 @@ class ExpressionGroup(Expression):
 
     def to_str(self, indent: int) -> str:
         # TODO: implement to_str for ExpressionGroup
-        raise SystemExit("not implemented")
+        raise NotImplementedError("ExpressionGroup.to_str")
 
 
-class FiniteLoop(ExpressionGroup):
+class ConstantLoop(ExpressionGroup):
     result: ElementOperand | None
     index: ElementOperand
     step: int
@@ -70,7 +70,7 @@ class FiniteLoop(ExpressionGroup):
 
     def to_str(self, indent: int) -> str:
         # TODO: implement to_str for FiniteExpression
-        raise SystemExit("not implemented")
+        raise NotImplementedError("FiniteLoop.to_str")
 
 
 class BinaryOperator(Enum):
@@ -108,7 +108,7 @@ class BinaryExpression(Expression):
 
     def to_str(self, indent: int) -> str:
         # TODO: implement to_str for BinaryExpression
-        raise SystemExit("not implemented")
+        raise NotImplementedError("BinaryExpression.to_str")
 
 
 class UnaryOperator(Enum):
@@ -142,4 +142,4 @@ class UnaryExpression(Expression):
 
     def to_str(self, indent: int) -> str:
         # TODO: implement to_str for UnaryExpression
-        raise SystemExit("not implemented")
+        raise NotImplementedError("UnaryExpression.to_str")

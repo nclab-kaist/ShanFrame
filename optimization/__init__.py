@@ -1,6 +1,6 @@
 from typing import Any, Self
 from abc import abstractmethod, ABC
-from model import Model
+from ir.model import Model
 
 
 class OptimizationOption(ABC):
@@ -25,6 +25,7 @@ class Optimization(ABC):
     @abstractmethod
     def get_optimization_options(self, model: Model) -> list[OptimizationOption]:
         pass
+
 
 def get_optimizations() -> list[Optimization]:
     return []

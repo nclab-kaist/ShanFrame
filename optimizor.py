@@ -1,4 +1,4 @@
-from model import Model
+from ir.model import Model
 from optimization import get_optimizations, Optimization, OptimizationOption
 from estimator import estimate_model
 
@@ -22,7 +22,7 @@ class Optimizor:
         
     def pick_option(self) -> OptimizationOption:
         # TODO: implement option picking policy
-        raise SystemExit("not implemented")
+        raise NotImplementedError("Optimizor.pick_option")
     
     def optimize(self) -> bool:
         # get all options
@@ -31,5 +31,5 @@ class Optimizor:
         picked_opt = self.pick_option()
         new_model = picked_opt.do_optimization(self.model)
         estimate_result = estimate_model(new_model)
-        raise SystemExit("not implemented")
+        raise NotImplementedError("Optimizor.optimizor")
         
