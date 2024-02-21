@@ -8,6 +8,7 @@ class Layer:
     predecessors: list[Self]
     successors: list[Self]
     weights: list[ArrayOperand]
+    buffers: list[ArrayOperand]
     content: ExpressionGroup
 
 

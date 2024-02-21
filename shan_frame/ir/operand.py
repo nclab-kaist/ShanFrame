@@ -3,7 +3,7 @@ from typing import Any, Self
 from sys import float_info
 from expression import Expression
 
-import utils
+import shan_frame.utils as utils
 
 
 class ElementType:
@@ -32,7 +32,7 @@ class ElementOperand(Operand):
 
     def __init__(self, is_int: bool, bit_length: int) -> None:
         self.type = ElementType(is_int, bit_length)
-    
+
     @classmethod
     def new_int_value(cls, bit_len: int, value: int) -> Self:
         new_int = cls(True, bit_len)
