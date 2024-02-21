@@ -1,6 +1,7 @@
 from typing import Any, Self
 from abc import abstractmethod, ABC
 from ir.model import Model
+from shan_frame import TargetArch
 
 
 class OptimizationOption(ABC):
@@ -20,14 +21,14 @@ class OptimizationOption(ABC):
 
     @abstractmethod
     def do_optimization(self, model: Model) -> Model:
-        pass
+        raise NotImplementedError("OptimizationOption.do_optimization")
 
 
 class Optimization(ABC):
     @abstractmethod
     def get_optimization_options(self, model: Model) -> list[OptimizationOption]:
-        pass
+        raise NotImplementedError("Optimization.get_optimization_options")
 
 
-def get_optimizations() -> list[Optimization]:
-    return []
+def get_optimizations(target_arch: TargetArch) -> list[Optimization]:
+    raise NotImplementedError("optimization.get_optimizations")
