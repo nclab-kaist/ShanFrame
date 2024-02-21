@@ -21,6 +21,8 @@ ShanFrame has the following characteristics compared to other AI compilers:
 
 `assets` contains misc assets.
 
+`.vscode` contains dev IDE settings.
+
 ## Requirement
 
 - Python 3.11+
@@ -28,3 +30,10 @@ ShanFrame has the following characteristics compared to other AI compilers:
 ## Setup and Run
 
 TBA
+
+## Coding Style
+
+This project follows [Python Code Style Guide](https://peps.python.org/pep-0008/), with following notes. These ensures the code is easily understandable for maintainence. 
+
+- [Type hints](https://docs.python.org/3/library/typing.html): Use as much as type hints so that every variable has known type. 
+- Type Checking: If using [Visual Studio Code](https://code.visualstudio.com/) as IDE, use [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance) extension and make sure the new code passes `typeCheckingMode: standard`. 

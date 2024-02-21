@@ -4,7 +4,7 @@ from operand import Operand, ElementOperand
 
 
 class Expression(ABC):
-    result: ElementOperand
+    result: ElementOperand | None
 
     @abstractmethod
     def uses_operand(self, operand: Operand) -> bool:
@@ -85,7 +85,7 @@ class BinaryOperator(Enum):
 
 
 class BinaryExpression(Expression):
-    result: ElementOperand
+    result: ElementOperand | None
     operator: BinaryOperator
     left_operand: Operand
     right_operand: ElementOperand
@@ -122,7 +122,7 @@ class UnaryOperator(Enum):
 
 
 class UnaryExpression(Expression):
-    result: ElementOperand
+    result: ElementOperand | None
     operator: UnaryOperator
     operand: ElementOperand
 

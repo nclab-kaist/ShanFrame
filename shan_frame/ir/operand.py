@@ -16,7 +16,7 @@ class ElementType:
 
 
 class Operand(ABC):
-    name: str | None
+    name: str
 
     @abstractmethod
     def print(self) -> str:
@@ -24,7 +24,7 @@ class Operand(ABC):
 
 
 class ElementOperand(Operand):
-    name: str | None = None
+    name: str = "Unnamed"
     type: ElementType
     max_value: float
     min_value: float
@@ -89,7 +89,7 @@ class ElementOperand(Operand):
 
 
 class ArrayOperand(Operand):
-    name: str
+    name: str = "Unnamed"
     type: ElementType
     size: int
 
