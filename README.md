@@ -1,6 +1,6 @@
 # ShanFrame
 
-ShanFrame is an **TinyAI model compiler** for **MCU devices**. It takes a tflite model, target MCU architecture, target SRAM and Flash size as inputs, and generates optimized C code, so that it the latency will be minimized while satisfying the limit.
+ShanFrame is a **TinyAI model compiler** for **MCU devices**. It takes a tflite model, target MCU architecture, target SRAM and Flash size as inputs, and generates optimized C code, so that it the latency will be minimized while satisfying the limit.
 
 ## Overview
 <p align="center">
