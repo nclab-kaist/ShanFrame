@@ -61,14 +61,17 @@ class ConstantLoop(ExpressionGroup):
 
 
 class BinaryOperator(Enum):
-    ADD = 1
-    SUB = 2
-    MUL = 3
-    DIV = 4
-    GET = 5
-    SET = 6
-    SADD8 = 7
-    SADD16 = 8
+    Add = 1
+    Sub = 2
+    Mul = 3
+    Div = 4
+    Mod = 5
+    Get = 6
+    Set = 7
+    And = 8
+    Or = 9
+    Sadd8 = 10
+    Sadd16 = 11
 
 
 class BinaryExpression(Expression):
@@ -106,6 +109,8 @@ class UnaryOperator(Enum):
     GreaterOrEqualTo = 5
     EqualTo = 6
     NotEqualTo = 7
+    Minus = 8
+    Reverse = 9
 
 
 class UnaryExpression(Expression):
@@ -128,3 +133,24 @@ class UnaryExpression(Expression):
 
     def to_str(self, indent: int) -> str:
         raise NotImplementedError("UnaryExpression.to_str")
+
+
+class BuiltinFunction(Enum):
+    MAX = 1
+    MIN = 2
+    Memset = 3
+    Memcpy = 4
+
+
+class FunctionExpression(Expression):
+    result: ElementOperand | None
+    function: BuiltinFunction
+    args: list[ElementOperand]
+
+    def __init__(self, function: BuiltinFunction, args: list[ElementOperand]) -> None:
+        self.function = function
+        self.args = args
+        self._generate_result()
+
+    def _generate_result(self) -> None:
+        raise NotImplementedError("FunctionExpression._generate_result")
