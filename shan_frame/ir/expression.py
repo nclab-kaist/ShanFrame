@@ -90,7 +90,7 @@ class BinaryExpression(Expression):
 
     def _generate_result(self) -> None:
         # TODO: generate the result of an expression,
-        pass
+        raise NotImplementedError("BinaryExpression._generate_result")
 
     def uses_operand(self, operand: Operand) -> bool:
         return self.left_operand == operand or self.right_operand == operand
