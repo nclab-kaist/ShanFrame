@@ -163,9 +163,9 @@ class BuiltinFunction(Enum):
 class FunctionExpression(Expression):
     result: Operand | None
     function: BuiltinFunction
-    args: list[ElementOperand]
+    args: list[Operand]
 
-    def __init__(self, function: BuiltinFunction, args: list[ElementOperand]) -> None:
+    def __init__(self, function: BuiltinFunction, args: list[Operand]) -> None:
         self.function = function
         self.args = args
         self._generate_result()
@@ -174,4 +174,8 @@ class FunctionExpression(Expression):
         raise NotImplementedError("FunctionExpression._generate_result")
 
     def to_str(self, indent: int) -> str:
-        raise NotImplementedError("FunctionExpression.to_str")
+        result_str = ""
+        if not self.result is None:
+            result_str = f"{self.result.to_str()} = "
+        arg_str = ", ".join([arg.to_str() for arg in self.args])
+        return f"{build_indent(indent)}{result_str}{str(self.function)}({arg_str});\n"
