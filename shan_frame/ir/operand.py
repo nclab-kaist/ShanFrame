@@ -1,12 +1,11 @@
-from abc import ABC, abstractmethod
 from typing import Any, Self
 from sys import float_info
-from expression import Expression
+from shan_frame.ir.definition import Operand, Expression
 
 import shan_frame.utils as utils
 
 
-class ElementType:
+class OperandType:
     is_int: bool
     bit_length: int
 
@@ -15,23 +14,15 @@ class ElementType:
         self.bit_length = bit_length
 
 
-class Operand(ABC):
-    name: str
-
-    @abstractmethod
-    def print(self) -> str:
-        raise NotImplementedError("Operand.print")
-
-
 class ElementOperand(Operand):
     name: str = "Unnamed"
-    type: ElementType
+    type: OperandType
     max_value: float
     min_value: float
     source: Expression | None = None
 
     def __init__(self, is_int: bool, bit_length: int) -> None:
-        self.type = ElementType(is_int, bit_length)
+        self.type = OperandType(is_int, bit_length)
 
     @classmethod
     def new_int_value(cls, bit_len: int, value: int) -> Self:
@@ -80,7 +71,7 @@ class ElementOperand(Operand):
             utils.signed_bit_length(min_value)
         )
 
-    def print(self) -> str:
+    def to_str(self) -> str:
         value = self._get_known_value()
         if value is None:
             return str(self.name)
@@ -90,13 +81,13 @@ class ElementOperand(Operand):
 
 class ArrayOperand(Operand):
     name: str = "Unnamed"
-    type: ElementType
+    type: OperandType
     size: int
 
-    def __init__(self, name: str, type: ElementType, size: int) -> None:
+    def __init__(self, name: str, type: OperandType, size: int) -> None:
         self.type = type
         self.size = size
         self.name = name
 
-    def print(self) -> str:
+    def to_str(self) -> str:
         return self.name

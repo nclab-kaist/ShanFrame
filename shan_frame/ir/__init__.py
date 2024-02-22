@@ -1,15 +1,16 @@
+from abc import ABC, abstractmethod
 from tflite import Model as TFliteModel
 from tflite import SubGraph, Operator, BuiltinOperator
-from model import Model as IRModel
+from shan_frame.ir.model import Model as IRModel
 
 
 class IRGenerator:
     model_path: str
     tflite_model: TFliteModel
-    
+
     def __init__(self, model_path: str) -> None:
         self.model_path = model_path
-        buf = open(model_path, "ra").read()
+        buf = open(model_path, "rb").read()
         self.tflite_model = TFliteModel.GetRootAs(buf)
 
     def parse_mdoel(self) -> IRModel:

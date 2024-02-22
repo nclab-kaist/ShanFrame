@@ -1,6 +1,6 @@
 from typing import Any, Self
 from abc import abstractmethod, ABC
-from ir.model import Model
+from shan_frame.ir.model import Model
 from shan_frame import TargetArch
 
 

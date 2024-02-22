@@ -1,12 +1,7 @@
-from enum import Enum
-from ir import IRGenerator
-from optimizor import Optimizor
-from code_generator import generate_code
-
-
-class TargetArch(Enum):
-    CORTEX_M7 = 0
-    CORTEX_M4 = 1
+from shan_frame.target_arch import TargetArch
+from shan_frame.ir import IRGenerator
+from shan_frame.optimizor import Optimizor
+from shan_frame.code_generator import generate_code
 
 
 def compile_model_at(

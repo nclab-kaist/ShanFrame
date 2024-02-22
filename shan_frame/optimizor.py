@@ -1,7 +1,7 @@
-from ir.model import Model
-from optimization import get_optimizations, Optimization, OptimizationOption
-from estimator import Estimator
-from shan_frame import TargetArch
+from shan_frame.ir.model import Model
+from shan_frame.optimization import get_optimizations, Optimization, OptimizationOption
+from shan_frame.estimator import Estimator
+from shan_frame.target_arch import TargetArch
 
 class Optimizor:
     sram_current: int
@@ -19,9 +19,7 @@ class Optimizor:
         self.optimizations = get_optimizations(target_arch)
         self.options = list()
         self.estimator = Estimator(output_dir)
-        current_usage = self.estimator.estimate_model(self.model)
-        self.sram_current = current_usage.sram
-        self.flash_current = current_usage.flash
+        (self.sram_current, self.flash_current) = self.estimator.estimate_model(self.model)
         
     def optimize(self) -> None:
         while self._optimize_one_round():

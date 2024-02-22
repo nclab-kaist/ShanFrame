@@ -1,18 +1,8 @@
 from enum import Enum
 from abc import ABC, abstractmethod
-from operand import Operand, ElementOperand
 
-
-class Expression(ABC):
-    result: ElementOperand | None
-
-    @abstractmethod
-    def uses_operand(self, operand: Operand) -> bool:
-        raise NotImplemented("Expression.use_operand")
-
-    @abstractmethod
-    def to_str(self, indent: int) -> str:
-        raise NotImplemented("Expression.to_str")
+from shan_frame.ir.definition import Operand, Expression
+from shan_frame.ir.operand import ElementOperand
 
 
 class ExpressionGroup(Expression):
@@ -33,7 +23,6 @@ class ExpressionGroup(Expression):
         return False
 
     def to_str(self, indent: int) -> str:
-        # TODO: implement to_str for ExpressionGroup
         raise NotImplementedError("ExpressionGroup.to_str")
 
 
@@ -134,12 +123,10 @@ class UnaryExpression(Expression):
         self._generate_result()
 
     def _generate_result(self) -> None:
-        # TODO: generate the result of this expression
-        pass
+        raise NotImplementedError("UnaryExpression._gen_result")
 
     def uses_operand(self, operand: Operand) -> bool:
         return self.operand == operand
 
     def to_str(self, indent: int) -> str:
-        # TODO: implement to_str for UnaryExpression
         raise NotImplementedError("UnaryExpression.to_str")
