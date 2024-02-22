@@ -13,6 +13,9 @@ class OperandType:
         self.is_int = is_int
         self.bit_length = bit_length
 
+    def to_str(self) -> str:
+        raise NotImplementedError("OperandType.to_str")
+
 
 class ElementOperand(Operand):
     name: str = "Unnamed"
@@ -91,3 +94,15 @@ class ArrayOperand(Operand):
 
     def to_str(self) -> str:
         return self.name
+
+
+class ArrayMemberOperand(Operand):
+    array: Operand
+    offset: int
+
+    def __init__(self, array: Operand, offset: int) -> None:
+        self.array = array
+        self.offset = offset
+
+    def to_str(self) -> str:
+        return f"{self.array.to_str()}[{self.offset}]"
