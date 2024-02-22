@@ -1,14 +1,14 @@
-from enum import Enum
+from enum import Enum, StrEnum
+from typing import Self
 from .definition import Operand, Expression
 from .operand import ElementOperand
+from shan_frame.utils import build_indent
 
 
 class ExpressionGroup(Expression):
-    result: ElementOperand | None
     content: list[Expression]
 
     def __init__(self, content: list[Expression] | None = None):
-        self.result = None
         if content is None:
             self.content = list()
         else:
@@ -21,11 +21,14 @@ class ExpressionGroup(Expression):
         return False
 
     def to_str(self, indent: int) -> str:
-        raise NotImplementedError("ExpressionGroup.to_str")
+        result = f"{build_indent(indent)}{{\n"
+        for expr in self.content:
+            result += expr.to_str(indent + 1)
+        result += f"{build_indent(indent)}}}\n"
+        return result
 
 
 class ConstantLoop(ExpressionGroup):
-    result: ElementOperand | None
     index: ElementOperand
     step: int
     loop_range: range
@@ -39,7 +42,6 @@ class ConstantLoop(ExpressionGroup):
                  step: int = 1,
                  unroll_level: int = 1
                  ) -> None:
-        self.result = None
         self.index = ElementOperand.new_int(32)
         self.step = step
         self.loop_range = range
@@ -56,34 +58,42 @@ class ConstantLoop(ExpressionGroup):
         return False
 
     def to_str(self, indent: int) -> str:
-        # TODO: implement to_str for FiniteExpression
+        index_str = self.index.to_str()
+        init_str = f"{self.index.type.to_str()} {index_str} = {self.loop_range.start}"
+        bound_str = f"{index_str} < {self.loop_range.stop}"
+        incr_str = f"{index_str} ++"
+
+        result = build_indent(indent)
+        result += f"for ({init_str}; {bound_str}; {incr_str}) {{ \n"
+        for expr in self.content:
+            result += expr.to_str(indent + 1)
+        result += f"{build_indent(indent)} }}\n"
+
         raise NotImplementedError("FiniteLoop.to_str")
 
 
-class BinaryOperator(Enum):
-    Add = 1
-    Sub = 2
-    Mul = 3
-    Div = 4
-    Mod = 5
-    Get = 6
-    Set = 7
-    And = 8
-    Or = 9
-    Sadd8 = 10
-    Sadd16 = 11
+class BinaryOperator(StrEnum):
+    Add = "+"
+    Sub = "-"
+    Mul = "*"
+    Div = "/"
+    Mod = "%"
+    And = "&&"
+    Or = "||"
+    BitAnd = "&"
+    BitOr = "|"
 
 
 class BinaryExpression(Expression):
-    result: ElementOperand | None
+    result: Operand
     operator: BinaryOperator
     left_operand: Operand
-    right_operand: ElementOperand
+    right_operand: Operand
 
     def __init__(self,
                  operator: BinaryOperator,
                  left_operand: Operand,
-                 right_operand: ElementOperand) -> None:
+                 right_operand: Operand) -> None:
         self.operator = operator
         self.left_operand = left_operand
         self.right_operand = right_operand
@@ -97,30 +107,35 @@ class BinaryExpression(Expression):
         return self.left_operand == operand or self.right_operand == operand
 
     def to_str(self, indent: int) -> str:
-        # TODO: implement to_str for BinaryExpression
-        raise NotImplementedError("BinaryExpression.to_str")
+        left_str = self.left_operand.to_str()
+        right_str = self.right_operand.to_str()
+        result_str = self.result.to_str()
+        operator_str = str(self.operator)
+
+        return f"{build_indent(indent)}{result_str} = {left_str} {operator_str} {right_str};\n"
 
 
-class UnaryOperator(Enum):
-    TypeCast = 1
-    LessThan = 2
-    LessOrEqualTo = 3
-    GreaterThan = 4
-    GreaterOrEqualTo = 5
-    EqualTo = 6
-    NotEqualTo = 7
-    Minus = 8
-    Reverse = 9
+class UnaryOperator(StrEnum):
+    TypeCast = "cast"
+    LessThan = "<"
+    LessOrEqualTo = "<="
+    GreaterThan = ">"
+    GreaterOrEqualTo = ">="
+    EqualTo = "=="
+    NotEqualTo = "!="
+    Minus = "-"
+    Reverse = "~"
+    Same = ""
 
 
 class UnaryExpression(Expression):
-    result: ElementOperand | None
+    result: Operand
     operator: UnaryOperator
-    operand: ElementOperand
+    operand: Operand
 
     def __init__(self,
                  operator: UnaryOperator,
-                 operand: ElementOperand) -> None:
+                 operand: Operand) -> None:
         self.operator = operator
         self.operand = operand
         self._generate_result()
@@ -132,18 +147,21 @@ class UnaryExpression(Expression):
         return self.operand == operand
 
     def to_str(self, indent: int) -> str:
-        raise NotImplementedError("UnaryExpression.to_str")
+        result_str = self.result.to_str()
+        operator_str = str(self.operator)
+        operand_str = self.operand.to_str()
+        return f"{build_indent(indent)}{result_str} = {operator_str}{operand_str};\n"
 
 
 class BuiltinFunction(Enum):
-    MAX = 1
-    MIN = 2
-    Memset = 3
-    Memcpy = 4
+    MAX = "MAX"
+    MIN = "MIN"
+    Memset = "memset"
+    Memcpy = "memcpy"
 
 
 class FunctionExpression(Expression):
-    result: ElementOperand | None
+    result: Operand | None
     function: BuiltinFunction
     args: list[ElementOperand]
 
@@ -154,3 +172,6 @@ class FunctionExpression(Expression):
 
     def _generate_result(self) -> None:
         raise NotImplementedError("FunctionExpression._generate_result")
+
+    def to_str(self, indent: int) -> str:
+        raise NotImplementedError("FunctionExpression.to_str")
