@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from tflite import Model as TFliteModel
 from tflite import SubGraph, Operator, BuiltinOperator
-from shan_frame.ir.model import Model as IRModel
+from .model import Model as IRModel
 
 
 class IRGenerator:

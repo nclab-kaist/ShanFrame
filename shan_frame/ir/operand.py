@@ -1,6 +1,6 @@
 from typing import Any, Self
 from sys import float_info
-from shan_frame.ir.definition import Operand, Expression
+from .definition import Operand, Expression
 
 import shan_frame.utils as utils
 

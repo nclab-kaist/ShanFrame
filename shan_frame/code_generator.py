@@ -1,4 +1,4 @@
-from shan_frame.ir.model import Model
+from .ir.model import Model
 
 
 def generate_code(output_dir: str, model: Model) -> None:

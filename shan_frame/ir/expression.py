@@ -1,8 +1,6 @@
 from enum import Enum
-from abc import ABC, abstractmethod
-
-from shan_frame.ir.definition import Operand, Expression
-from shan_frame.ir.operand import ElementOperand
+from .definition import Operand, Expression
+from .operand import ElementOperand
 
 
 class ExpressionGroup(Expression):

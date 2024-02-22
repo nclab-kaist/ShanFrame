@@ -1,7 +1,7 @@
-from shan_frame.ir.model import Model
-from shan_frame.optimization import get_optimizations, Optimization, OptimizationOption
-from shan_frame.estimator import Estimator
-from shan_frame.target_arch import TargetArch
+from .ir.model import Model
+from .optimization import get_optimizations, Optimization, OptimizationOption
+from .estimator import Estimator
+from .target_arch import TargetArch
 
 class Optimizor:
     sram_current: int

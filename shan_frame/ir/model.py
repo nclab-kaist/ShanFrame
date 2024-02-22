@@ -1,6 +1,6 @@
 from typing import Self
-from shan_frame.ir.operand import ArrayOperand
-from shan_frame.ir.expression import ExpressionGroup
+from .operand import ArrayOperand
+from .expression import ExpressionGroup
 
 
 class Layer:
