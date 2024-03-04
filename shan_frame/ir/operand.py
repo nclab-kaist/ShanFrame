@@ -89,20 +89,32 @@ class ElementOperand(Operand):
 class Array3DOperand(Operand):
     name: str = ""
     type: OperandType
-    channel: int
-    x: int
-    y: int
+    #channel: int
+    #x: int
+    #y: int
     elements: list[list[list[ElementOperand]]]
 
-    def __init__(self, name: str, type: OperandType, channel: int, x: int, y: int, elements: list[list[list[ElementOperand]]]) -> None:
+    def __init__(self, name: str, type: OperandType, elements: list[list[list[ElementOperand]]]) -> None:
         self.type = type
         self.name = name
-        self.channel = channel
-        self.x = x
-        self.y = y
+        #self.channel = channel
+        #self.x = x
+        #self.y = y
         self.elements = elements
 
     def to_str(self) -> str:
         if len(self.name) == 0:
             raise RuntimeError(f"Array is unnamed. {pprint(vars(self))}")
         return self.name
+
+    @property
+    def col_size(self):
+        return len(self.elements[0])
+    
+    @property
+    def row_size(self):
+        return len(self.elements[0][0])
+    
+    @property
+    def channel(self):
+        return len(self.elements)
