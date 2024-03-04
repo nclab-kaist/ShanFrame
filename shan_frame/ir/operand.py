@@ -19,7 +19,7 @@ class OperandType:
 
 
 class ElementOperand(Operand):
-    name: str = "Unnamed"
+    name: str = ""
     type: OperandType
     max_value: float
     min_value: float
@@ -78,6 +78,9 @@ class ElementOperand(Operand):
     def to_str(self) -> str:
         value = self._get_known_value()
         if value is None:
+            if len(self.name) == 0:
+                raise RuntimeError(
+                    f"Unknown element is unnamed. {pprint(vars(self))}")
             return str(self.name)
         else:
             return str(value)
