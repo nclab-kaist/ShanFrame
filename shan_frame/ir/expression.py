@@ -72,7 +72,11 @@ class ConstantLoop(ExpressionGroup):
         raise NotImplementedError("FiniteLoop.to_str")
 
 
-_result_count: int = 0
+def generate_temp_name() -> str:
+    temp_count = getattr(generate_temp_name, "counter", 0)
+    result_name = "temp" + str(temp_count)
+    setattr(generate_temp_name, "counter", temp_count + 1)
+    return result_name
 
 
 class BinaryOperator(StrEnum):
@@ -106,9 +110,7 @@ class BinaryExpression(Expression):
 
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
-            global _result_count
-            result_name = "temp" + str(_result_count)
-            _result_count += 1
+            result_name = generate_temp_name()
         # TODO: generate the result of an expression,
         raise NotImplementedError("BinaryExpression._generate_result")
 
@@ -151,9 +153,7 @@ class UnaryExpression(Expression):
 
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
-            global _result_count
-            result_name = "temp" + str(_result_count)
-            _result_count += 1
+            result_name = generate_temp_name()
         # TODO: generate the result of an expression,
         raise NotImplementedError("UnaryExpression._generate_result")
 
@@ -213,9 +213,7 @@ class CastExpression(Expression):
         
     def _generate_result(self, target_type: OperandType, result_name: str) -> None:
         if len(result_name) == 0:
-            global _result_count
-            result_name = "temp" + str(_result_count)
-            _result_count += 1
+            result_name = generate_temp_name()
         # TODO: generate the result of an expression,
         raise NotImplementedError("CastExpression._generate_result")
     
