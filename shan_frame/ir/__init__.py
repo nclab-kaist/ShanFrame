@@ -13,7 +13,7 @@ class IRGenerator:
         buf = open(model_path, "rb").read()
         self.tflite_model = TFliteModel.GetRootAs(buf)
 
-    def parse_mdoel(self) -> IRModel:
+    def parse_model(self) -> IRModel:
         subgraph = self.tflite_model.Subgraphs(0)
         if subgraph is None:
             raise RuntimeError("subgraph 0 not exist")

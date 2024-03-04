@@ -1,6 +1,7 @@
 from typing import Any, Self
 from sys import float_info
 from .definition import Operand, Expression
+from pprint import pprint
 
 import shan_frame.utils as utils
 
@@ -18,7 +19,7 @@ class OperandType:
 
 
 class ElementOperand(Operand):
-    name: str = "Unnamed"
+    name: str = ""
     type: OperandType
     max_value: float
     min_value: float
@@ -77,32 +78,43 @@ class ElementOperand(Operand):
     def to_str(self) -> str:
         value = self._get_known_value()
         if value is None:
+            if len(self.name) == 0:
+                raise RuntimeError(
+                    f"Unknown element is unnamed. {pprint(vars(self))}")
             return str(self.name)
         else:
             return str(value)
 
 
-class ArrayOperand(Operand):
-    name: str = "Unnamed"
+class Array3DOperand(Operand):
+    name: str = ""
     type: OperandType
-    size: int
+    #channel: int
+    #x: int
+    #y: int
+    elements: list[list[list[ElementOperand]]]
 
-    def __init__(self, name: str, type: OperandType, size: int) -> None:
+    def __init__(self, name: str, type: OperandType, elements: list[list[list[ElementOperand]]]) -> None:
         self.type = type
-        self.size = size
         self.name = name
+        #self.channel = channel
+        #self.x = x
+        #self.y = y
+        self.elements = elements
 
     def to_str(self) -> str:
+        if len(self.name) == 0:
+            raise RuntimeError(f"Array is unnamed. {pprint(vars(self))}")
         return self.name
 
-
-class ArrayMemberOperand(Operand):
-    array: Operand
-    offset: int
-
-    def __init__(self, array: Operand, offset: int) -> None:
-        self.array = array
-        self.offset = offset
-
-    def to_str(self) -> str:
-        return f"{self.array.to_str()}[{self.offset}]"
+    @property
+    def col_size(self):
+        return len(self.elements[0])
+    
+    @property
+    def row_size(self):
+        return len(self.elements[0][0])
+    
+    @property
+    def channel(self):
+        return len(self.elements)

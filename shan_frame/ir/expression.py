@@ -1,7 +1,7 @@
 from enum import Enum, StrEnum
 from typing import Self
 from .definition import Operand, Expression
-from .operand import ElementOperand
+from .operand import ElementOperand, OperandType
 from shan_frame.utils import build_indent
 
 
@@ -72,6 +72,13 @@ class ConstantLoop(ExpressionGroup):
         raise NotImplementedError("FiniteLoop.to_str")
 
 
+def generate_temp_name() -> str:
+    temp_count = getattr(generate_temp_name, "counter", 0)
+    result_name = "temp" + str(temp_count)
+    setattr(generate_temp_name, "counter", temp_count + 1)
+    return result_name
+
+
 class BinaryOperator(StrEnum):
     Add = "+"
     Sub = "-"
@@ -85,21 +92,25 @@ class BinaryOperator(StrEnum):
 
 
 class BinaryExpression(Expression):
-    result: Operand
+    result: ElementOperand
     operator: BinaryOperator
     left_operand: Operand
-    right_operand: Operand
+    right_operand: ElementOperand
+    _result_count: int
 
     def __init__(self,
                  operator: BinaryOperator,
                  left_operand: Operand,
-                 right_operand: Operand) -> None:
+                 right_operand: ElementOperand,
+                 result_name: str = "") -> None:
         self.operator = operator
         self.left_operand = left_operand
         self.right_operand = right_operand
-        self._generate_result()
+        self._generate_result(result_name)
 
-    def _generate_result(self) -> None:
+    def _generate_result(self, result_name: str) -> None:
+        if len(result_name) == 0:
+            result_name = generate_temp_name()
         # TODO: generate the result of an expression,
         raise NotImplementedError("BinaryExpression._generate_result")
 
@@ -116,7 +127,6 @@ class BinaryExpression(Expression):
 
 
 class UnaryOperator(StrEnum):
-    TypeCast = "cast"
     LessThan = "<"
     LessOrEqualTo = "<="
     GreaterThan = ">"
@@ -129,19 +139,23 @@ class UnaryOperator(StrEnum):
 
 
 class UnaryExpression(Expression):
-    result: Operand
+    result: ElementOperand
     operator: UnaryOperator
-    operand: Operand
+    operand: ElementOperand
 
     def __init__(self,
                  operator: UnaryOperator,
-                 operand: Operand) -> None:
+                 operand: ElementOperand,
+                 result_name: str = "") -> None:
         self.operator = operator
         self.operand = operand
-        self._generate_result()
+        self._generate_result(result_name)
 
-    def _generate_result(self) -> None:
-        raise NotImplementedError("UnaryExpression._gen_result")
+    def _generate_result(self, result_name: str) -> None:
+        if len(result_name) == 0:
+            result_name = generate_temp_name()
+        # TODO: generate the result of an expression,
+        raise NotImplementedError("UnaryExpression._generate_result")
 
     def uses_operand(self, operand: Operand) -> bool:
         return self.operand == operand
@@ -158,6 +172,11 @@ class BuiltinFunction(Enum):
     MIN = "MIN"
     Memset = "memset"
     Memcpy = "memcpy"
+    # fake function for array access, illegal name to avoid collision
+    # usage:
+    #   3get(3darray, channel, x, y) === 3darray[channel][x][y]
+    Arrayget = "3get"
+    Arrayset = "3set"
 
 
 class FunctionExpression(Expression):
@@ -179,3 +198,28 @@ class FunctionExpression(Expression):
             result_str = f"{self.result.to_str()} = "
         arg_str = ", ".join([arg.to_str() for arg in self.args])
         return f"{build_indent(indent)}{result_str}{str(self.function)}({arg_str});\n"
+
+
+class CastExpression(Expression):
+    source: ElementOperand
+    result: ElementOperand
+    
+    def __init__(self, 
+                 source: ElementOperand, 
+                 target_type: OperandType, 
+                 result_name: str = ""):
+        self.source = source
+        self._generate_result(target_type, result_name)
+        
+    def _generate_result(self, target_type: OperandType, result_name: str) -> None:
+        if len(result_name) == 0:
+            result_name = generate_temp_name()
+        # TODO: generate the result of an expression,
+        raise NotImplementedError("CastExpression._generate_result")
+    
+    def to_str(self, indent: int) -> str:
+        result_str = self.result.to_str()
+        type_str = self.result.type.to_str()
+        source_str = self.source.to_str()
+        return f"{build_indent(indent)}{result_str} = ({type_str}){source_str};\n"
+    
