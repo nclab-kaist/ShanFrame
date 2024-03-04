@@ -173,6 +173,11 @@ class BuiltinFunction(Enum):
     MIN = "MIN"
     Memset = "memset"
     Memcpy = "memcpy"
+    # fake function for array access, illegal name to avoid collision
+    # usage:
+    #   3get(3darray, channel, x, y) === 3darray[channel][x][y]
+    Arrayget = "3get"
+    Arrayset = "3set"
 
 
 class FunctionExpression(Expression):
