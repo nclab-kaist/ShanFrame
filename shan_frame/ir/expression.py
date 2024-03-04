@@ -1,7 +1,7 @@
 from enum import Enum, StrEnum
 from typing import Self
 from .definition import Operand, Expression
-from .operand import ElementOperand
+from .operand import ElementOperand, OperandType
 from shan_frame.utils import build_indent
 
 
@@ -125,7 +125,6 @@ class BinaryExpression(Expression):
 
 
 class UnaryOperator(StrEnum):
-    TypeCast = "cast"
     LessThan = "<"
     LessOrEqualTo = "<="
     GreaterThan = ">"
@@ -199,3 +198,30 @@ class FunctionExpression(Expression):
             result_str = f"{self.result.to_str()} = "
         arg_str = ", ".join([arg.to_str() for arg in self.args])
         return f"{build_indent(indent)}{result_str}{str(self.function)}({arg_str});\n"
+
+
+class CastExpression(Expression):
+    source: ElementOperand
+    result: ElementOperand
+    
+    def __init__(self, 
+                 source: ElementOperand, 
+                 target_type: OperandType, 
+                 result_name: str = ""):
+        self.source = source
+        self._generate_result(target_type, result_name)
+        
+    def _generate_result(self, target_type: OperandType, result_name: str) -> None:
+        if len(result_name) == 0:
+            global _result_count
+            result_name = "temp" + str(_result_count)
+            _result_count += 1
+        # TODO: generate the result of an expression,
+        raise NotImplementedError("CastExpression._generate_result")
+    
+    def to_str(self, indent: int) -> str:
+        result_str = self.result.to_str()
+        type_str = self.result.type.to_str()
+        source_str = self.source.to_str()
+        return f"{build_indent(indent)}{result_str} = ({type_str}){source_str};\n"
+    
