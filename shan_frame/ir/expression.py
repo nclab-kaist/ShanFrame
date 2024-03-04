@@ -72,6 +72,9 @@ class ConstantLoop(ExpressionGroup):
         raise NotImplementedError("FiniteLoop.to_str")
 
 
+_result_count: int = 0
+
+
 class BinaryOperator(StrEnum):
     Add = "+"
     Sub = "-"
@@ -85,21 +88,27 @@ class BinaryOperator(StrEnum):
 
 
 class BinaryExpression(Expression):
-    result: Operand
+    result: ElementOperand
     operator: BinaryOperator
     left_operand: Operand
-    right_operand: Operand
+    right_operand: ElementOperand
+    _result_count: int
 
     def __init__(self,
                  operator: BinaryOperator,
                  left_operand: Operand,
-                 right_operand: Operand) -> None:
+                 right_operand: ElementOperand,
+                 result_name: str = "") -> None:
         self.operator = operator
         self.left_operand = left_operand
         self.right_operand = right_operand
-        self._generate_result()
+        self._generate_result(result_name)
 
-    def _generate_result(self) -> None:
+    def _generate_result(self, result_name: str) -> None:
+        if len(result_name) == 0:
+            global _result_count
+            result_name = "temp" + str(_result_count)
+            _result_count += 1
         # TODO: generate the result of an expression,
         raise NotImplementedError("BinaryExpression._generate_result")
 
@@ -129,19 +138,25 @@ class UnaryOperator(StrEnum):
 
 
 class UnaryExpression(Expression):
-    result: Operand
+    result: ElementOperand
     operator: UnaryOperator
-    operand: Operand
+    operand: ElementOperand
 
     def __init__(self,
                  operator: UnaryOperator,
-                 operand: Operand) -> None:
+                 operand: ElementOperand,
+                 result_name: str = "") -> None:
         self.operator = operator
         self.operand = operand
-        self._generate_result()
+        self._generate_result(result_name)
 
-    def _generate_result(self) -> None:
-        raise NotImplementedError("UnaryExpression._gen_result")
+    def _generate_result(self, result_name: str) -> None:
+        if len(result_name) == 0:
+            global _result_count
+            result_name = "temp" + str(_result_count)
+            _result_count += 1
+        # TODO: generate the result of an expression,
+        raise NotImplementedError("UnaryExpression._generate_result")
 
     def uses_operand(self, operand: Operand) -> bool:
         return self.operand == operand
