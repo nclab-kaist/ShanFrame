@@ -1,6 +1,7 @@
 from typing import Any, Self
 from sys import float_info
 from .definition import Operand, Expression
+from pprint import pprint
 
 import shan_frame.utils as utils
 
@@ -82,27 +83,23 @@ class ElementOperand(Operand):
             return str(value)
 
 
-class ArrayOperand(Operand):
-    name: str = "Unnamed"
+class Array3DOperand(Operand):
+    name: str = ""
     type: OperandType
-    size: int
+    channel: int
+    x: int
+    y: int
+    elements: list[list[list[ElementOperand]]]
 
-    def __init__(self, name: str, type: OperandType, size: int) -> None:
+    def __init__(self, name: str, type: OperandType, channel: int, x: int, y: int, elements: list[list[list[ElementOperand]]]) -> None:
         self.type = type
-        self.size = size
         self.name = name
+        self.channel = channel
+        self.x = x
+        self.y = y
+        self.elements = elements
 
     def to_str(self) -> str:
+        if len(self.name) == 0:
+            raise RuntimeError(f"Array is unnamed. {pprint(vars(self))}")
         return self.name
-
-
-class ArrayMemberOperand(Operand):
-    array: Operand
-    offset: int
-
-    def __init__(self, array: Operand, offset: int) -> None:
-        self.array = array
-        self.offset = offset
-
-    def to_str(self) -> str:
-        return f"{self.array.to_str()}[{self.offset}]"

@@ -1,5 +1,5 @@
 from typing import Self
-from .operand import ArrayOperand
+from .operand import Array3DOperand
 from .expression import ExpressionGroup
 
 
@@ -7,8 +7,8 @@ class Layer:
     name: str
     predecessors: list[Self]
     successors: list[Self]
-    weights: list[ArrayOperand]
-    buffers: list[ArrayOperand]
+    weights: list[Array3DOperand]
+    buffers: list[Array3DOperand]
     content: ExpressionGroup
 
 
