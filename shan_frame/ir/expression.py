@@ -36,13 +36,14 @@ class ConstantLoop(ExpressionGroup):
     content: list[Expression]
 
     def __init__(self,
-                 indent: int,
+                 index: ElementOperand,
                  range: range,
                  base_content: list[Expression] | None = None,
                  step: int = 1,
                  unroll_level: int = 1
                  ) -> None:
-        self.index = ElementOperand.new_int(32)
+        assert index.type.is_int
+        self.index = index
         self.step = step
         self.loop_range = range
         self.unroll_level = unroll_level
@@ -116,7 +117,6 @@ class BinaryExpression(Expression):
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        
         raise NotImplementedError("BinaryExpression._generate_result")
 
     def uses_operand(self, operand: Operand) -> bool:
