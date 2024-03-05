@@ -94,12 +94,12 @@ class BinaryOperator(StrEnum):
 class BinaryExpression(Expression):
     result: ElementOperand
     operator: BinaryOperator
-    left_operand: Operand
+    left_operand: ElementOperand
     right_operand: ElementOperand
 
     def __init__(self,
                  operator: BinaryOperator,
-                 left_operand: Operand,
+                 left_operand: ElementOperand,
                  right_operand: ElementOperand,
                  result_name: str = "") -> None:
         self.operator = operator
@@ -110,7 +110,7 @@ class BinaryExpression(Expression):
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        # TODO: generate the result of an expression,  
+        
         raise NotImplementedError("BinaryExpression._generate_result")
 
     def uses_operand(self, operand: Operand) -> bool:
