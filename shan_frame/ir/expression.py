@@ -96,7 +96,6 @@ class BinaryExpression(Expression):
     operator: BinaryOperator
     left_operand: Operand
     right_operand: ElementOperand
-    _result_count: int
 
     def __init__(self,
                  operator: BinaryOperator,
@@ -111,7 +110,7 @@ class BinaryExpression(Expression):
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        # TODO: generate the result of an expression,
+        # TODO: generate the result of an expression,  
         raise NotImplementedError("BinaryExpression._generate_result")
 
     def uses_operand(self, operand: Operand) -> bool:
