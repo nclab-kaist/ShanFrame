@@ -1,21 +1,9 @@
 from typing import Any, Self
 from sys import float_info
-from .definition import Operand, Expression
+from .definition import Operand, Expression, OperandType
 from pprint import pprint
 
 import shan_frame.utils as utils
-
-
-class OperandType:
-    is_int: bool
-    bit_length: int
-
-    def __init__(self, is_int: bool, bit_length: int) -> None:
-        self.is_int = is_int
-        self.bit_length = bit_length
-
-    def to_str(self) -> str:
-        raise NotImplementedError("OperandType.to_str")
 
 
 class ElementOperand(Operand):
@@ -26,7 +14,7 @@ class ElementOperand(Operand):
     source: Expression | None = None
 
     def __init__(self, is_int: bool, bit_length: int, max_value: float, min_value: float, name: str = "") -> None:
-        self.type = OperandType(is_int, bit_length)
+        self.type = OperandType.new(is_int, bit_length)
         self.name = name
         self.max_value = max_value
         self.min_value = min_value
@@ -57,13 +45,13 @@ class ElementOperand(Operand):
         value: float = self.max_value
         if value != self.min_value:
             return None
-        if self.type.is_int:
+        if self.type.is_int():
             return int(value)
         return value
 
     def value_bit_length(self) -> int:
-        if self.type.is_int:
-            return self.type.bit_length
+        if not self.type.is_int():
+            return self.type.bit_len()
         max_value = int(self.max_value)
         min_value = int(self.min_value)
         return max(
