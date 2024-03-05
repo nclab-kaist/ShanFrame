@@ -87,6 +87,12 @@ class BinaryOperator(StrEnum):
     Mod = "%"
     And = "&&"
     Or = "||"
+    Less = "<"
+    Leq = "<="
+    Great = ">"
+    Geq = ">="
+    Eq = "=="
+    Neq = "!="
     BitAnd = "&"
     BitOr = "|"
 
@@ -126,14 +132,9 @@ class BinaryExpression(Expression):
 
 
 class UnaryOperator(StrEnum):
-    LessThan = "<"
-    LessOrEqualTo = "<="
-    GreaterThan = ">"
-    GreaterOrEqualTo = ">="
-    EqualTo = "=="
-    NotEqualTo = "!="
     Minus = "-"
     Reverse = "~"
+    Not = "!"
     Same = ""
 
 
