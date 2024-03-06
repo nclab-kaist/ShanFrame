@@ -312,8 +312,8 @@ class CastExpression(Expression):
     def _generate_result(self, target_type: OperandType, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        # TODO: generate the result of an expression,
-        raise NotImplementedError("CastExpression._generate_result")
+        assert target_type.bit_len() > 0 and self.source.type.bit_len() > 0
+        self.result = ElementOperand(target_type, target_type.max_value(), target_type.min_value(), result_name)
     
     def to_str(self, indent: int) -> str:
         result_str = self.result.to_str()
