@@ -1,7 +1,7 @@
 from enum import Enum, StrEnum
 from typing import Callable, Self
 from .definition import Operand, Expression
-from .operand import ElementOperand, OperandType
+from .operand import Array3DOperand, ElementOperand, OperandType
 from ..utils import build_indent
 from .gen_result import *
 
@@ -227,30 +227,68 @@ class UnaryExpression(Expression):
         return f"{build_indent(indent)}{result_str} = {operator_str}{operand_str};\n"
 
 
-class BuiltinFunction(Enum):
+class BuiltinFunction(StrEnum):
     MAX = "MAX"
     MIN = "MIN"
-    Memset = "memset"
-    Memcpy = "memcpy"
+    # fake function wrapper for array set/copy
+    # usage:
+    #   memset(array, int offset, int c, int n)
+    #   memcpy(dst_array, int dst_offset, src_array, int src_offset, int count)
+    # Memset = "memset"
+    # Memcpy = "memcpy"
     # fake function for array access, illegal name to avoid collision
     # usage:
-    #   3get(3darray, channel, x, y) === 3darray[channel][x][y]
+    #   3get(1darray, 0, 0, i) === 1darray[i]
+    #   3get(2darray, 0, i, j) === 2darray[i][j]
+    #   3get(3darray, i, j, k) === 3darray[i][j][k]
+    #   3get(weight, ch, x, y) === weight[ch][x][y]
     Arrayget = "3get"
     Arrayset = "3set"
 
 
 class FunctionExpression(Expression):
-    result: Operand | None
+    result: Operand
     function: BuiltinFunction
     args: list[Operand]
 
-    def __init__(self, function: BuiltinFunction, args: list[Operand]) -> None:
+    def __init__(self, function: BuiltinFunction, args: list[Operand], result_name: str = "") -> None:
         self.function = function
         self.args = args
-        self._generate_result()
+        self._generate_result(result_name)
 
-    def _generate_result(self) -> None:
-        raise NotImplementedError("FunctionExpression._generate_result")
+    def _generate_result(self, result_name: str) -> None:
+        if len(result_name) == 0:
+            result_name = generate_temp_name()
+        match self.function:
+            case BuiltinFunction.MAX | BuiltinFunction.MIN:
+                assert len(self.args) == 2
+                assert isinstance(self.args[0], ElementOperand) and isinstance(self.args[1], ElementOperand)
+                assert self.args[0].type == self.args[1].type
+                type = self.args[0].type
+                self.result = ElementOperand(type, type.max_value(), type.min_value(), result_name)
+            # case BuiltinFunction.Memset:
+            #     assert len(self.args) == 4
+            #     assert isinstance(self.args[0], Array3DOperand)
+            #     assert isinstance(self.args[1], ElementOperand) and self.args[1].type.is_int()
+            #     assert isinstance(self.args[2], ElementOperand) and self.args[2].type.is_int()
+            #     assert isinstance(self.args[3], ElementOperand) and self.args[3].type.is_int()
+            #     self.result = ElementOperand(OperandType.VOID, 0, 0)
+            # case BuiltinFunction.Memcpy:
+            #     assert len(self.args) == 5
+            #     assert isinstance(self.args[0], Array3DOperand)
+            #     assert isinstance(self.args[1], ElementOperand) and self.args[1].type.is_int()
+            #     assert isinstance(self.args[2], Array3DOperand)
+            #     assert isinstance(self.args[3], ElementOperand) and self.args[1].type.is_int()
+            #     assert isinstance(self.args[4], ElementOperand) and self.args[1].type.is_int()
+            #     self.result = ElementOperand(OperandType.VOID, 0, 0)
+            case BuiltinFunction.Arrayget:
+                assert len(self.args) == 4
+                assert isinstance(self.args[0], Array3DOperand)
+                assert isinstance(self.args[1], ElementOperand) and self.args[1].type.is_int()
+                assert isinstance(self.args[2], ElementOperand) and self.args[1].type.is_int()
+                assert isinstance(self.args[3], ElementOperand) and self.args[1].type.is_int()
+                type = self.args[0].type
+                self.result = ElementOperand(type, type.max_value(), type.min_value(), result_name)
 
     def to_str(self, indent: int) -> str:
         result_str = ""
