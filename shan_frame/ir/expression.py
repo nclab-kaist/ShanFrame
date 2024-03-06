@@ -70,6 +70,27 @@ class ForLoop(ExpressionGroup):
         result += f"{build_indent(indent)} }}\n"
 
         return result
+    
+class IfExpression(ExpressionGroup):
+    condition: ElementOperand
+    content: list[Expression]
+    
+    def __init__(self, condition: ElementOperand) -> None:
+        self.condition = condition
+    
+    def uses_operand(self, operand: Operand) -> bool:
+        if self.condition == operand:
+            return True
+        return super().uses_operand(operand)
+    
+    def to_str(self, indent: int) -> str:
+        condition_str = self.condition.to_str()
+        result = build_indent(indent)
+        result += f"if ({condition_str}) {{ \n"
+        for expr in self.content:
+            result += expr.to_str(indent + 1)
+        result += f"{build_indent(indent)} }}\n"
+        return result
 
 
 def generate_temp_name() -> str:
