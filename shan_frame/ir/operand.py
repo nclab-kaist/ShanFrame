@@ -1,5 +1,4 @@
 from typing import Any, Self
-from sys import float_info
 from .definition import Operand, Expression, OperandType
 from pprint import pprint
 
@@ -13,30 +12,31 @@ class ElementOperand(Operand):
     min_value: float
     source: Expression | None = None
 
-    def __init__(self, is_int: bool, bit_length: int, max_value: float, min_value: float, name: str = "") -> None:
-        self.type = OperandType.new(is_int, bit_length)
+    def __init__(self, type: OperandType, max_value: float, min_value: float, name: str = "") -> None:
         self.name = name
         self.max_value = max_value
         self.min_value = min_value
+        self.type = type
         if len(name) == 0 and min_value != max_value:
             raise RuntimeError("Unnamed element is not literal")
 
     @classmethod
     def new_int_literal(cls, bit_len: int, value: int) -> Self:
-        return cls(True, bit_len, float(value), float(value))
+        return cls(OperandType.new(True, bit_len), float(value), float(value))
 
     @classmethod
     def new_int(cls, bit_len: int, name: str) -> Self:
-        value_max: int = (1 << bit_len) - 1
-        return cls(True, bit_len, float(value_max), float(-value_max - 1), name)
+        type = OperandType.new(True, bit_len)
+        return cls(type, type.max_value(), type.min_value(), name)
 
     @classmethod
     def new_float(cls, bit_len: int, name: str) -> Self:
-        return cls(False, bit_len, float_info.max, float_info.min, name)
+        type = OperandType.new(False, bit_len)
+        return cls(type, type.max_value(), type.min_value(), name)
 
     @classmethod
     def new_float_literal(cls, bit_len, value: float) -> Self:
-        return cls(False, bit_len, value, value)
+        return cls(OperandType.new(False, bit_len), value, value)
 
     def has_known_value(self) -> bool:
         return self.max_value == self.min_value

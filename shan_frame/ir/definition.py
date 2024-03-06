@@ -1,6 +1,7 @@
 from enum import IntEnum
 from abc import ABC, abstractmethod
 from typing import Self
+from sys import float_info
 
 
 class Operand(ABC):
@@ -55,6 +56,18 @@ class OperandType(IntEnum):
 
     def is_int(self) -> bool:
         return int(self) > 0
+    
+    def max_value(self) -> float:
+        if self.is_int():
+            return (1 << self.bit_len()) - 1
+        else:
+            return float_info.max
+    
+    def min_value(self) -> float:
+        if self.is_int():
+            return -(1 << self.bit_len())
+        else:
+            return float_info.min
 
     @classmethod
     def new(cls, is_int: bool, bit_len: int) -> Self:
