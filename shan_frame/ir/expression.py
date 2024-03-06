@@ -208,8 +208,14 @@ class UnaryExpression(Expression):
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        # TODO: generate the result of an expression,
-        raise NotImplementedError("UnaryExpression._generate_result")
+        match self.operator:
+            case UnaryOperator.Reverse:
+                assert self.operand.type.is_int()
+                self.result = ElementOperand.new_int(self.operand.type.bit_len(), result_name)
+            case UnaryOperator.Same | UnaryOperator.Minus:
+                self.result = ElementOperand(self.operand.type, self.operand.max_value, self.operand.min_value, result_name)
+            case UnaryOperator.Not:
+                self.result = ElementOperand.new_int(1, result_name)
 
     def uses_operand(self, operand: Operand) -> bool:
         return self.operand == operand
