@@ -1,8 +1,9 @@
 from enum import Enum, StrEnum
-from typing import Self
+from typing import Callable, Self
 from .definition import Operand, Expression
 from .operand import ElementOperand, OperandType
-from shan_frame.utils import build_indent
+from ..utils import build_indent
+from .gen_result import *
 
 
 class ExpressionGroup(Expression):
@@ -86,16 +87,52 @@ class BinaryOperator(StrEnum):
     Mul = "*"
     Div = "/"
     Mod = "%"
-    And = "&&"
-    Or = "||"
-    Less = "<"
+    LogicAnd = "&&"
+    LogicOr = "||"
+    Lt = "<"
     Leq = "<="
-    Great = ">"
+    Gt = ">"
     Geq = ">="
     Eq = "=="
     Neq = "!="
     BitAnd = "&"
     BitOr = "|"
+    
+    def is_arith(self) -> bool:
+        arith_op = {
+            BinaryOperator.Add,
+            BinaryOperator.Sub,
+            BinaryOperator.Mul,
+            BinaryOperator.Div,
+            BinaryOperator.Div,
+            BinaryOperator.Mod
+        }
+        return self in arith_op
+    
+    def is_logic(self) -> bool:
+        logic_op = {
+            BinaryOperator.LogicAnd,
+            BinaryOperator.LogicOr,
+        }
+        return self in logic_op
+    
+    def is_cmp(self) -> bool:
+        cmp_op = {
+            BinaryOperator.Lt,
+            BinaryOperator.Leq,
+            BinaryOperator.Gt,
+            BinaryOperator.Geq,
+            BinaryOperator.Eq,
+            BinaryOperator.Neq
+        }
+        return self in cmp_op
+    
+    def is_bitwise(self) -> bool:
+        bitwise_op = {
+            BinaryOperator.BitAnd,
+            BinaryOperator.BitOr
+        }
+        return self in bitwise_op
 
 
 class BinaryExpression(Expression):
@@ -117,7 +154,24 @@ class BinaryExpression(Expression):
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        raise NotImplementedError("BinaryExpression._generate_result")
+        left = self.left_operand
+        right = self.right_operand
+        if self.operator.is_arith():
+            assert left.type == right.type and left.type.bit_len() > 1
+            if left.type.is_int():
+                self.result = ElementOperand.new_int(left.type.bit_len(), result_name)
+            else:
+                self.result = ElementOperand.new_float(left.type.bit_len(), result_name)
+        elif self.operator.is_logic():
+            assert left.type == right.type and left.type.bit_len() == 1
+            self.result = ElementOperand.new_int(1, result_name)
+        elif self.operator.is_cmp():
+            assert left.type == right.type
+            self.result = ElementOperand.new_int(1, result_name)
+        elif self.operator.is_bitwise():
+            assert left.type == right.type and left.type.is_int()
+            self.result = ElementOperand.new_int(left.type.bit_len(), result_name)
+        raise RuntimeError("Unknown operator type")
 
     def uses_operand(self, operand: Operand) -> bool:
         return self.left_operand == operand or self.right_operand == operand
