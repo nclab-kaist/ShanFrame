@@ -11,7 +11,7 @@ def compile_model_at(
     sram_limit: int,
     flash_limit: int
 ) -> tuple[int, int]:
-    model = IRGenerator(model_path).parse_mdoel()
+    model = IRGenerator(model_path).parse_model()
     optimizor = Optimizor(sram_limit, flash_limit,
                           model, output_dir, target_arch)
     optimizor.optimize()

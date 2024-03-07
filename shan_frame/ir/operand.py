@@ -1,21 +1,8 @@
 from typing import Any, Self
-from sys import float_info
-from .definition import Operand, Expression
+from .definition import Operand, Expression, OperandType
 from pprint import pprint
 
 import shan_frame.utils as utils
-
-
-class OperandType:
-    is_int: bool
-    bit_length: int
-
-    def __init__(self, is_int: bool, bit_length: int) -> None:
-        self.is_int = is_int
-        self.bit_length = bit_length
-
-    def to_str(self) -> str:
-        raise NotImplementedError("OperandType.to_str")
 
 
 class ElementOperand(Operand):
@@ -25,34 +12,31 @@ class ElementOperand(Operand):
     min_value: float
     source: Expression | None = None
 
-    def __init__(self, is_int: bool, bit_length: int) -> None:
-        self.type = OperandType(is_int, bit_length)
+    def __init__(self, type: OperandType, max_value: float, min_value: float, name: str = "") -> None:
+        self.name = name
+        self.max_value = max_value
+        self.min_value = min_value
+        self.type = type
+        if len(name) == 0 and min_value != max_value:
+            raise RuntimeError("Unnamed element is not literal")
 
     @classmethod
-    def new_int_value(cls, bit_len: int, value: int) -> Self:
-        new_int = cls(True, bit_len)
-        new_int.max_value = float(value)
-        new_int.min_value = float(value)
-        return new_int
+    def new_int_literal(cls, bit_len: int, value: int) -> Self:
+        return cls(OperandType.new(True, bit_len), float(value), float(value))
 
     @classmethod
-    def new_int(cls, bit_len: int) -> Self:
-        new_int = cls(True, bit_len)
-        value_max: int = (1 << bit_len) - 1
-        new_int.max_value = float(value_max)
-        new_int.min_value = float(-value_max - 1)
-        return new_int
+    def new_int(cls, bit_len: int, name: str) -> Self:
+        type = OperandType.new(True, bit_len)
+        return cls(type, type.max_value(), type.min_value(), name)
 
     @classmethod
-    def new_float(cls, bit_len: int, value: float | None = None) -> Self:
-        new_float = cls(False, bit_len)
-        if value == None:
-            new_float.max_value = float_info.max
-            new_float.min_value = float_info.min
-        else:
-            new_float.max_value = value
-            new_float.min_value = value
-        return new_float
+    def new_float(cls, bit_len: int, name: str) -> Self:
+        type = OperandType.new(False, bit_len)
+        return cls(type, type.max_value(), type.min_value(), name)
+
+    @classmethod
+    def new_float_literal(cls, bit_len, value: float) -> Self:
+        return cls(OperandType.new(False, bit_len), value, value)
 
     def has_known_value(self) -> bool:
         return self.max_value == self.min_value
@@ -61,13 +45,13 @@ class ElementOperand(Operand):
         value: float = self.max_value
         if value != self.min_value:
             return None
-        if self.type.is_int:
+        if self.type.is_int():
             return int(value)
         return value
 
     def value_bit_length(self) -> int:
-        if self.type.is_int:
-            return self.type.bit_length
+        if not self.type.is_int():
+            return self.type.bit_len()
         max_value = int(self.max_value)
         min_value = int(self.min_value)
         return max(
@@ -76,14 +60,12 @@ class ElementOperand(Operand):
         )
 
     def to_str(self) -> str:
+        if len(self.name) != 0:
+            return self.name
         value = self._get_known_value()
         if value is None:
-            if len(self.name) == 0:
-                raise RuntimeError(
-                    f"Unknown element is unnamed. {pprint(vars(self))}")
-            return str(self.name)
-        else:
-            return str(value)
+            raise RuntimeError("Unnamed element is not literal")
+        return str(value)
 
 
 class Array3DOperand(Operand):
@@ -110,11 +92,11 @@ class Array3DOperand(Operand):
     @property
     def col_size(self):
         return len(self.elements[0])
-    
+
     @property
     def row_size(self):
         return len(self.elements[0][0])
-    
+
     @property
     def channel(self):
         return len(self.elements)
