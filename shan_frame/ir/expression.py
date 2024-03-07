@@ -40,11 +40,13 @@ class ForLoop(ExpressionGroup):
                  start: ElementOperand,
                  stop: ElementOperand,
                  step: ElementOperand,
+                 content: list[Expression]
                  ) -> None:
         self.index = index
         self.start = start
         self.stop = stop
         self.step = step
+        self.content = content
 
     def uses_operand(self, operand: Operand) -> bool:
         if self.start == operand or self.stop == operand or self.step == operand:
