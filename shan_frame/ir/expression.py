@@ -1,8 +1,9 @@
 from enum import Enum, StrEnum
-from typing import Self
+from typing import Callable, Self
 from .definition import Operand, Expression
-from .operand import ElementOperand, OperandType
-from shan_frame.utils import build_indent
+from .operand import Array3DOperand, ElementOperand, OperandType
+from ..utils import build_indent
+from .gen_result import *
 
 
 class ExpressionGroup(Expression):
@@ -108,22 +109,63 @@ class BinaryOperator(StrEnum):
     Mul = "*"
     Div = "/"
     Mod = "%"
-    And = "&&"
-    Or = "||"
+    LogicAnd = "&&"
+    LogicOr = "||"
+    Lt = "<"
+    Leq = "<="
+    Gt = ">"
+    Geq = ">="
+    Eq = "=="
+    Neq = "!="
     BitAnd = "&"
     BitOr = "|"
+    
+    def is_arith(self) -> bool:
+        arith_op = {
+            BinaryOperator.Add,
+            BinaryOperator.Sub,
+            BinaryOperator.Mul,
+            BinaryOperator.Div,
+            BinaryOperator.Div,
+            BinaryOperator.Mod
+        }
+        return self in arith_op
+    
+    def is_logic(self) -> bool:
+        logic_op = {
+            BinaryOperator.LogicAnd,
+            BinaryOperator.LogicOr,
+        }
+        return self in logic_op
+    
+    def is_cmp(self) -> bool:
+        cmp_op = {
+            BinaryOperator.Lt,
+            BinaryOperator.Leq,
+            BinaryOperator.Gt,
+            BinaryOperator.Geq,
+            BinaryOperator.Eq,
+            BinaryOperator.Neq
+        }
+        return self in cmp_op
+    
+    def is_bitwise(self) -> bool:
+        bitwise_op = {
+            BinaryOperator.BitAnd,
+            BinaryOperator.BitOr
+        }
+        return self in bitwise_op
 
 
 class BinaryExpression(Expression):
     result: ElementOperand
     operator: BinaryOperator
-    left_operand: Operand
+    left_operand: ElementOperand
     right_operand: ElementOperand
-    _result_count: int
 
     def __init__(self,
                  operator: BinaryOperator,
-                 left_operand: Operand,
+                 left_operand: ElementOperand,
                  right_operand: ElementOperand,
                  result_name: str = "") -> None:
         self.operator = operator
@@ -134,8 +176,24 @@ class BinaryExpression(Expression):
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        # TODO: generate the result of an expression,
-        raise NotImplementedError("BinaryExpression._generate_result")
+        left = self.left_operand
+        right = self.right_operand
+        if self.operator.is_arith():
+            assert left.type == right.type and left.type.bit_len() > 1
+            if left.type.is_int():
+                self.result = ElementOperand.new_int(left.type.bit_len(), result_name)
+            else:
+                self.result = ElementOperand.new_float(left.type.bit_len(), result_name)
+        elif self.operator.is_logic():
+            assert left.type == right.type and left.type.bit_len() == 1
+            self.result = ElementOperand.new_int(1, result_name)
+        elif self.operator.is_cmp():
+            assert left.type == right.type
+            self.result = ElementOperand.new_int(1, result_name)
+        elif self.operator.is_bitwise():
+            assert left.type == right.type and left.type.is_int()
+            self.result = ElementOperand.new_int(left.type.bit_len(), result_name)
+        raise RuntimeError("Unknown operator type")
 
     def uses_operand(self, operand: Operand) -> bool:
         return self.left_operand == operand or self.right_operand == operand
@@ -150,14 +208,9 @@ class BinaryExpression(Expression):
 
 
 class UnaryOperator(StrEnum):
-    LessThan = "<"
-    LessOrEqualTo = "<="
-    GreaterThan = ">"
-    GreaterOrEqualTo = ">="
-    EqualTo = "=="
-    NotEqualTo = "!="
     Minus = "-"
     Reverse = "~"
+    Not = "!"
     Same = ""
 
 
@@ -177,8 +230,14 @@ class UnaryExpression(Expression):
     def _generate_result(self, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        # TODO: generate the result of an expression,
-        raise NotImplementedError("UnaryExpression._generate_result")
+        match self.operator:
+            case UnaryOperator.Reverse:
+                assert self.operand.type.is_int()
+                self.result = ElementOperand.new_int(self.operand.type.bit_len(), result_name)
+            case UnaryOperator.Same | UnaryOperator.Minus:
+                self.result = ElementOperand(self.operand.type, self.operand.max_value, self.operand.min_value, result_name)
+            case UnaryOperator.Not:
+                self.result = ElementOperand.new_int(1, result_name)
 
     def uses_operand(self, operand: Operand) -> bool:
         return self.operand == operand
@@ -190,30 +249,68 @@ class UnaryExpression(Expression):
         return f"{build_indent(indent)}{result_str} = {operator_str}{operand_str};\n"
 
 
-class BuiltinFunction(Enum):
+class BuiltinFunction(StrEnum):
     MAX = "MAX"
     MIN = "MIN"
-    Memset = "memset"
-    Memcpy = "memcpy"
+    # fake function wrapper for array set/copy
+    # usage:
+    #   memset(array, int offset, int c, int n)
+    #   memcpy(dst_array, int dst_offset, src_array, int src_offset, int count)
+    # Memset = "memset"
+    # Memcpy = "memcpy"
     # fake function for array access, illegal name to avoid collision
     # usage:
-    #   3get(3darray, channel, x, y) === 3darray[channel][x][y]
+    #   3get(1darray, 0, 0, i) === 1darray[i]
+    #   3get(2darray, 0, i, j) === 2darray[i][j]
+    #   3get(3darray, i, j, k) === 3darray[i][j][k]
+    #   3get(weight, ch, x, y) === weight[ch][x][y]
     Arrayget = "3get"
     Arrayset = "3set"
 
 
 class FunctionExpression(Expression):
-    result: Operand | None
+    result: Operand
     function: BuiltinFunction
     args: list[Operand]
 
-    def __init__(self, function: BuiltinFunction, args: list[Operand]) -> None:
+    def __init__(self, function: BuiltinFunction, args: list[Operand], result_name: str = "") -> None:
         self.function = function
         self.args = args
-        self._generate_result()
+        self._generate_result(result_name)
 
-    def _generate_result(self) -> None:
-        raise NotImplementedError("FunctionExpression._generate_result")
+    def _generate_result(self, result_name: str) -> None:
+        if len(result_name) == 0:
+            result_name = generate_temp_name()
+        match self.function:
+            case BuiltinFunction.MAX | BuiltinFunction.MIN:
+                assert len(self.args) == 2
+                assert isinstance(self.args[0], ElementOperand) and isinstance(self.args[1], ElementOperand)
+                assert self.args[0].type == self.args[1].type
+                type = self.args[0].type
+                self.result = ElementOperand(type, type.max_value(), type.min_value(), result_name)
+            # case BuiltinFunction.Memset:
+            #     assert len(self.args) == 4
+            #     assert isinstance(self.args[0], Array3DOperand)
+            #     assert isinstance(self.args[1], ElementOperand) and self.args[1].type.is_int()
+            #     assert isinstance(self.args[2], ElementOperand) and self.args[2].type.is_int()
+            #     assert isinstance(self.args[3], ElementOperand) and self.args[3].type.is_int()
+            #     self.result = ElementOperand(OperandType.VOID, 0, 0)
+            # case BuiltinFunction.Memcpy:
+            #     assert len(self.args) == 5
+            #     assert isinstance(self.args[0], Array3DOperand)
+            #     assert isinstance(self.args[1], ElementOperand) and self.args[1].type.is_int()
+            #     assert isinstance(self.args[2], Array3DOperand)
+            #     assert isinstance(self.args[3], ElementOperand) and self.args[1].type.is_int()
+            #     assert isinstance(self.args[4], ElementOperand) and self.args[1].type.is_int()
+            #     self.result = ElementOperand(OperandType.VOID, 0, 0)
+            case BuiltinFunction.Arrayget:
+                assert len(self.args) == 4
+                assert isinstance(self.args[0], Array3DOperand)
+                assert isinstance(self.args[1], ElementOperand) and self.args[1].type.is_int()
+                assert isinstance(self.args[2], ElementOperand) and self.args[1].type.is_int()
+                assert isinstance(self.args[3], ElementOperand) and self.args[1].type.is_int()
+                type = self.args[0].type
+                self.result = ElementOperand(type, type.max_value(), type.min_value(), result_name)
 
     def to_str(self, indent: int) -> str:
         result_str = ""
@@ -237,8 +334,8 @@ class CastExpression(Expression):
     def _generate_result(self, target_type: OperandType, result_name: str) -> None:
         if len(result_name) == 0:
             result_name = generate_temp_name()
-        # TODO: generate the result of an expression,
-        raise NotImplementedError("CastExpression._generate_result")
+        assert target_type.bit_len() > 0 and self.source.type.bit_len() > 0
+        self.result = ElementOperand(target_type, target_type.max_value(), target_type.min_value(), result_name)
     
     def to_str(self, indent: int) -> str:
         result_str = self.result.to_str()
