@@ -29,41 +29,42 @@ class ExpressionGroup(Expression):
         return result
 
 
-class ConstantLoop(ExpressionGroup):
+class ForLoop(ExpressionGroup):
     index: ElementOperand
-    step: int
-    loop_range: range
-    unroll_level: int
+    start: ElementOperand
+    stop: ElementOperand
+    step: ElementOperand
     content: list[Expression]
 
     def __init__(self,
                  index: ElementOperand,
-                 range: range,
-                 base_content: list[Expression] | None = None,
-                 step: int = 1,
-                 unroll_level: int = 1
+                 start: ElementOperand,
+                 stop: ElementOperand,
+                 step: ElementOperand,
+                 content: list[Expression]
                  ) -> None:
-        assert index.type.is_int
         self.index = index
+        self.start = start
+        self.stop = stop
         self.step = step
-        self.loop_range = range
-        self.unroll_level = unroll_level
-        if base_content is None:
-            self.base_content = list()
-        else:
-            self.base_content = base_content
+        self.content = content
 
     def uses_operand(self, operand: Operand) -> bool:
-        for expression in self.base_content:
+        if self.start == operand or self.stop == operand or self.step == operand:
+            return True
+        for expression in self.content:
             if expression.uses_operand(operand):
                 return True
         return False
 
     def to_str(self, indent: int) -> str:
         index_str = self.index.to_str()
-        init_str = f"{self.index.type.to_str()} {index_str} = {self.loop_range.start}"
-        bound_str = f"{index_str} < {self.loop_range.stop}"
-        incr_str = f"{index_str} ++"
+        start_str = self.start.to_str()
+        stop_str = self.stop.to_str()
+        step_str = self.step.to_str()
+        init_str = f"{self.index.type.to_str()} {index_str} = {start_str}"
+        bound_str = f"{index_str} < {stop_str}"
+        incr_str = f"{index_str} += {step_str}"
 
         result = build_indent(indent)
         result += f"for ({init_str}; {bound_str}; {incr_str}) {{ \n"
@@ -71,7 +72,28 @@ class ConstantLoop(ExpressionGroup):
             result += expr.to_str(indent + 1)
         result += f"{build_indent(indent)} }}\n"
 
-        raise NotImplementedError("FiniteLoop.to_str")
+        return result
+    
+class IfExpression(ExpressionGroup):
+    condition: ElementOperand
+    content: list[Expression]
+    
+    def __init__(self, condition: ElementOperand) -> None:
+        self.condition = condition
+    
+    def uses_operand(self, operand: Operand) -> bool:
+        if self.condition == operand:
+            return True
+        return super().uses_operand(operand)
+    
+    def to_str(self, indent: int) -> str:
+        condition_str = self.condition.to_str()
+        result = build_indent(indent)
+        result += f"if ({condition_str}) {{ \n"
+        for expr in self.content:
+            result += expr.to_str(indent + 1)
+        result += f"{build_indent(indent)} }}\n"
+        return result
 
 
 def generate_temp_name() -> str:
