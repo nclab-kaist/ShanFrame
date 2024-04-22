@@ -1,17 +1,18 @@
 # ShanFrame
 
-ShanFrame is a **TinyAI model compiler** for **MCU devices**. It takes a tflite model, target MCU architecture, target SRAM and Flash size as inputs, and generates optimized C code, so that it the latency will be minimized while satisfying the limit.
+ShanFrame is a **TinyAI model compiler** for **MCU devices**. It takes a tflite model as input, and generates optimized C code, so that the peak sram usage and latency can be minimized. 
 
 ## Overview
 <p align="center">
     <img src="./assets/figures/Architecture.drawio.png" alt="architecture diagram" width="540">
 </p>
 
-According to the target specs, ShanFrame generates a list of optimization options in each iteration. Each optimization option has its SRAM/Flash overhead and latency benefit. According to a policy set in `Optimizor`, ShanFrame applies one optimization option that fits within spec limits. This iteration continues until there is no appliable options.
+According to the input model structure, ShanFrame utilizes the inter-layer connectivity information to apply optimizations. 
 
-ShanFrame has the following characteristics compared to other AI compilers:
-- **Trade space for speed**: With more specific target binary size and SRAM usage, ShanFrame is allowed to apply more efficient and more aggressive optimizations to speedup the workload.
-- **Utilize compile-time information**: Different from other workloads, AI workload is very predictable as most computation parameters are known at compile time. Since most MCUs are not equipped with accelerators, execution on CPU allows ShanFrame to utilize partial evaluation and constant propagation for further optimization.
+ShanFrame applies the following unique optimizations compared to other AI compilers:
+- **Input-output overlapping**: ShanFrame tries to overlap an OP's input and output in memory space as much as possible. With overlapped input and output tensors, the fragmentation level of the model can be reduced and the sram usage for each op is minimized, reducing the peak memory.
+- **Data layout fit**: ShanFrame determines the data layout of each intermediate tensor so that the operators can be conducted with highest efficiency.
+- **Output tensor pre-padding**: In each OP, if the sram size allows (does not exceed the set sram target), ShanFrame will pre-pad an OP's output tensor instead of doing padding in the next fused OP to reduce latency. 
 
 ## Code Structure
 
