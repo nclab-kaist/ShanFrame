@@ -37,3 +37,9 @@ This project follows [Python Code Style Guide](https://peps.python.org/pep-0008/
 
 - [Type hints](https://docs.python.org/3/library/typing.html): Use as much as type hints so that every variable has known type. 
 - Type Checking: If using [Visual Studio Code](https://code.visualstudio.com/) as IDE, use [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance) extension and make sure the new code passes `typeCheckingMode: standard`. 
+
+## References
+
+[2D bin packing for storage allocation](http://adambuchsbaum.com/papers/dsa-stoc03.pdf)
+
+[2D bin packing application in memory scheduling](https://arxiv.org/pdf/2305.01497.pdf)
