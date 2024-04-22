@@ -3,7 +3,6 @@ from typing import Callable, Self
 from .definition import Operand, Expression
 from .operand import Array3DOperand, ElementOperand, OperandType
 from ..utils import build_indent
-from .gen_result import *
 
 
 class ExpressionGroup(Expression):
