@@ -8,7 +8,7 @@ class OperatorType(Enum):
     # To be added
 
 
-class IROperator:
+class Operator:
     op_type: OperatorType
     pad_output: bool
 
@@ -26,20 +26,27 @@ class DataType(Enum):
 
 
 class Tensor:
+    dim_h: int = -1
+    dim_w: int = -1
+    dim_c: int = -1
+    src_op: int = -1
+    dst_op: list[int] = []
+    layout: DataLayout = DataLayout.UNKNOWN
+    addr: int = 0
+    data_type: DataType = DataType.INT8
+    pad_h: int = -1
+    pad_w: int = -1
+    
+    
+class ConstArray:
     name: str
-    dim_h: int
-    dim_w: int
-    dim_c: int
-    src_op: int
-    dst_op: list[int]
-    layout: DataLayout
-    addr: int
+    dim_h: int = -1
+    dim_w: int = -1
+    dim_c: int = -1
     data_type: DataType
     data: list[float]
-    pad_h: int
-    pad_w: int
 
 
-class IRModel:
+class Model:
     tensors: list[Tensor]
-    operators: list[IROperator]
+    operators: list[Operator]

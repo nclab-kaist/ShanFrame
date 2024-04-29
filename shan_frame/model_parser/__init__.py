@@ -1,8 +1,9 @@
 
 from abc import ABC, abstractmethod
 from tflite import Model as TFliteModel
-from tflite import SubGraph, Operator, BuiltinOperator
-from ir import IRModel
+from tflite import Operator as TFliteOP
+from tflite import SubGraph, BuiltinOperator
+from ir import Model
 
 
 class ModelParser:
@@ -14,7 +15,7 @@ class ModelParser:
         buf = open(model_path, "rb").read()
         self.tflite_model = TFliteModel.GetRootAs(buf)
 
-    def parse_model(self) -> IRModel:
+    def parse_model(self) -> Model:
         subgraph = self.tflite_model.Subgraphs(0)
         if subgraph is None:
             raise RuntimeError("subgraph 0 not exist")
@@ -36,14 +37,23 @@ class ModelParser:
                 if next_next_op is None:
                     raise RuntimeError("next_next_op is none")
                 three_op_sequence = [op, next_op, next_next_op]
-                if self.checkIfRequireSElementmult(three_op_sequence):
+                if self._checkIfRequireSElementmult(three_op_sequence):
                     # SE block detected
                     skip_next_ops = 2
                     raise NotImplementedError("parse se block")
 
         raise NotImplementedError("ir.parse_model")
 
-    def getOpCodeStr(self, op: Operator) -> str:
+    def _handleOperator(self, op):
+        op_code = self._getOpCodeStr(op)
+        match op_code:
+            case "CONV_2D":
+                raise NotImplementedError(
+                    "ModelParser._handleOperator(): parse CONV_2D")
+            case _:
+                raise NotImplementedError(f"Unsupported op: {op_code}")
+
+    def _getOpCodeStr(self, op: TFliteOP) -> str:
         op_code_list_idx = op.OpcodeIndex()
         op_codes = self.tflite_model.OperatorCodes(op_code_list_idx)
         if op_codes is None:
@@ -63,11 +73,11 @@ class ModelParser:
 
         return builtin_op_code[op_code_id]
 
-    def checkIfRequireSElementmult(self, three_op_sequence: list[Operator]) -> bool:
+    def _checkIfRequireSElementmult(self, three_op_sequence: list[TFliteOP]) -> bool:
         if (
-            self.getOpCodeStr(three_op_sequence[0]) == "ADD"
-            and self.getOpCodeStr(three_op_sequence[1]) == "MUL"
-            and self.getOpCodeStr(three_op_sequence[2]) == "MUL"
+            self._getOpCodeStr(three_op_sequence[0]) == "ADD"
+            and self._getOpCodeStr(three_op_sequence[1]) == "MUL"
+            and self._getOpCodeStr(three_op_sequence[2]) == "MUL"
         ):
             return True
         return False

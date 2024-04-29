@@ -1,29 +1,35 @@
-from ir import IROperator
+from ir import Operator
 
-class Conv2D(IROperator):
-    input_idx: int
-    output_idx: int
-    weight_idx: int
-    offset: int
-    bias_idx: int
-    scales_idx: int
+
+class Conv2D(Operator):
+    input_idx: int = -1
+    output_idx: int = -1
+    weight_idx: int = -1
+    stride_h: int = -1
+    stride_w: int = -1
+    offset: int = -1
+    bias_idx: int = -1
+    scales_idx: int = -1
 
     
-class DepthConv2D(IROperator):
-    input_idx: int
-    output_idx: int
-    weight_idx: int
-    offset: int
-    bias_idx: int
-    scales_idx: int
+class DepthConv2D(Operator):
+    input_idx: int = -1
+    output_idx: int = -1
+    weight_idx: int = -1
+    stride_h: int = -1
+    stride_w: int = -1
+    offset: int = -1
+    bias_idx: int = -1
+    scales_idx: int = -1
 
 
-class Add(IROperator):
-    input_idx: tuple[int, int]
-    output_idx: int
+class Add(Operator):
+    input_idx: tuple[int, int] = (-1, -1)
+    output_idx: int = -1
 
-class Mul(IROperator):
-    input_idx: tuple[int, int]
-    output_idx: int
+
+class Mul(Operator):
+    input_idx: tuple[int, int] = (-1, -1)
+    output_idx: int = -1
     
     
