@@ -18,27 +18,23 @@ class TFLiteTensorWrpper:
 
 def get_input_tensors(op: TFliteOP, model: TFliteModel) -> list[TFLiteTensorWrpper]:
     inputs = op.InputsAsNumpy()
-    if inputs == 0:
-        raise RuntimeError(f"no input found in {op}")
+    assert inputs != 0, f"no input found in {op}"
     return _get_wrapper_tensors(iter(inputs), model)
 
 
 def get_output_tensors(op: TFliteOP, model: TFliteModel) -> list[TFLiteTensorWrpper]:
     inputs = op.OutputsAsNumpy()
-    if inputs == 0:
-        raise RuntimeError(f"no input found in {op}")
+    assert inputs != 0, f"no input found in {op}"
     return _get_wrapper_tensors(iter(inputs), model)
 
 
 def _get_wrapper_tensors(tensor_index_list: Iterator[np.float64], model: TFliteModel):
     ret = []
     subgraph = model.Subgraphs(0)
-    if subgraph is None:
-        raise RuntimeError("No subgraph found")
+    assert subgraph is not None, "No subgraph found"
     for idx in tensor_index_list:
         tensor = subgraph.Tensors(idx)
-        if tensor is None:
-            raise RuntimeError("No tensor found")
+        assert tensor is not None, "No tensor found"
         buffer_idx = tensor.Buffer()
         buffer = model.Buffers(buffer_idx)
 
@@ -127,8 +123,7 @@ def getMultiplierShift(effective_scale):
 def getOpCodeStr(op, model: TFliteModel):
     op_code_list_idx = op.OpcodeIndex()
     op_code = model.OperatorCodes(op_code_list_idx)
-    if op_code is None:
-        raise RuntimeError("No op code found")
+    assert op_code is not None, "No op code found"
     op_code_id = op_code.DeprecatedBuiltinCode()
 
     def _build_str_map(obj):
