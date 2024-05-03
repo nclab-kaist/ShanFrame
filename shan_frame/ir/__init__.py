@@ -1,4 +1,5 @@
 from enum import Enum
+import numpy as np
 
 class OperatorType(Enum):
     CONV_2D = 0
@@ -26,27 +27,21 @@ class DataType(Enum):
 
 
 class Tensor:
+    name: str
+    tflite_tensor_idx: float = -1
     dim_h: int = -1
     dim_w: int = -1
     dim_c: int = -1
     src_op: int = -1
     dst_op: list[int] = []
-    layout: DataLayout = DataLayout.UNKNOWN
+    layout: DataLayout = DataLayout.HWC
     addr: int = 0
     data_type: DataType = DataType.INT8
-    pad_h: int = -1
-    pad_w: int = -1
-    
-    
-class ConstArray:
-    name: str
-    dim_h: int = -1
-    dim_w: int = -1
-    dim_c: int = -1
-    data_type: DataType
-    data: list[float]
+    data: np.ndarray
+    prepad_h: int = -1
+    prepad_w: int = -1
 
 
 class Model:
-    tensors: list[Tensor]
+    tensors: dict[float, Tensor]
     operators: list[Operator]
