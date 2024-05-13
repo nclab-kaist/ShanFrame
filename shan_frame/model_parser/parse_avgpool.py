@@ -56,7 +56,8 @@ def parse_avgpool2d(op: TFliteOP, tflite_model: TFliteModel, ir_model: IRModel):
     avgpool2d_op = AvgPool2D(
         input_tensor.tflite_tensor_idx, 
         output_tensor.tflite_tensor_idx,
-        stride_h, stride_w
+        stride_h, stride_w,
+        filter_h, filter_w
     )
     ir_model.add_tensors(new_tensors)
     ir_model.add_operator(avgpool2d_op)
