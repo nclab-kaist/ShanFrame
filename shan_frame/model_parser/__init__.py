@@ -49,7 +49,7 @@ class ModelParser:
     def _handleOperator(self, op: TFliteOP, model: IRModel):
         op_code = self._getOpCodeStr(op)
         match op_code:
-            case "CONV_2D":
+            case "CONV_2D" | "DEPTHWISE_CONV_2D":
                 parse_conv2d(op, self.tflite_model, model)
             case _:
                 raise NotImplementedError(f"Unsupported op: {op_code}")

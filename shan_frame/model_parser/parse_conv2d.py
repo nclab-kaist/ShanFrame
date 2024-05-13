@@ -6,8 +6,9 @@ from tflite import Model as TFliteModel
 from tflite import Operator as TFliteOP
 from tflite.BuiltinOptions import BuiltinOptions
 from tflite.Conv2DOptions import Conv2DOptions
+from tflite.DepthwiseConv2DOptions import DepthwiseConv2DOptions
 
-from ..ir.operator import Conv2D
+from ..ir.operator import Conv2D, DepthConv2D
 from ..ir import Tensor as IRTensor
 
 from ..utils import (
@@ -22,6 +23,7 @@ def parse_conv2d(op: TFliteOP, tflite_model: TFliteModel, ir_model: IRModel):
     # operator
     op_code_str = getOpCodeStr(op, tflite_model)
     assert op_code_str == "CONV_2D" or op_code_str == "DEPTHWISE_CONV_2D", f"unsupported input op to parse_conv2d(): {op_code_str}"
+    is_conv2d = (op_code_str == "CONV_2D")
     
     new_tensors: list[IRTensor] = []
     
@@ -40,20 +42,32 @@ def parse_conv2d(op: TFliteOP, tflite_model: TFliteModel, ir_model: IRModel):
     output_tensor = output_tensors[0]
     
     # options
-    assert op.BuiltinOptionsType() == BuiltinOptions.Conv2DOptions
-    op_options = op.BuiltinOptions()
-    assert op_options != None, "op has no options"
-    conv_optiopns = Conv2DOptions()
-    conv_optiopns.Init(op_options.Bytes, op_options.Pos)
+    if is_conv2d:
+        assert op.BuiltinOptionsType() == BuiltinOptions.Conv2DOptions
+        op_options = op.BuiltinOptions()
+        assert op_options != None, "op has no options"
+        conv_options = Conv2DOptions()
+        conv_options.Init(op_options.Bytes, op_options.Pos)
+    else:
+        assert op.BuiltinOptionsType() == BuiltinOptions.DepthwiseConv2DOptions
+        op_options = op.BuiltinOptions()
+        assert op_options != None, "op has no options"
+        conv_options = DepthwiseConv2DOptions()
+        conv_options.Init(op_options.Bytes, op_options.Pos)
     
     # conv parameters
-    stride_h = conv_optiopns.StrideH()
-    stride_w = conv_optiopns.StrideW()
+    stride_h = conv_options.StrideH()
+    stride_w = conv_options.StrideW()
     
-    # shapes
-    assert output_tensor.dim_c == weight_tensor.dim_n, "output channels not match"
-    assert weight_tensor.dim_c == input_tensor.dim_c, "kernel channels not match"
-    assert input_tensor.dim_n == output_tensor.dim_n, "output batches not match"
+    # shape check
+    if is_conv2d:
+        assert output_tensor.dim_c == weight_tensor.dim_n, "output channels not match"
+        assert weight_tensor.dim_c == input_tensor.dim_c, "kernel channels not match"
+        assert input_tensor.dim_n == output_tensor.dim_n, "output batches not match"
+    else:
+        assert input_tensor.dim_c == output_tensor.dim_c, "output channels not match"        
+        assert input_tensor.dim_c == weight_tensor.dim_c, "kernel channels not match"
+        assert input_tensor.dim_n == output_tensor.dim_n, "output batches not match"
     
     # tensor types
     input_type = input_tensor.data_type
@@ -65,12 +79,21 @@ def parse_conv2d(op: TFliteOP, tflite_model: TFliteModel, ir_model: IRModel):
     if len(input_tensors) == 3:
         bias_idx = input_tensors[2].tflite_tensor_idx
     
-    conv2d_op = Conv2D(
-        input_tensor.tflite_tensor_idx, 
-        weight_tensor.tflite_tensor_idx,
-        output_tensor.tflite_tensor_idx,
-        0, 0, stride_h, stride_w, bias_idx
-    )
+    if is_conv2d:
+        conv2d_op = Conv2D(
+            input_tensor.tflite_tensor_idx,
+            weight_tensor.tflite_tensor_idx,
+            output_tensor.tflite_tensor_idx,
+            0, 0, stride_h, stride_w, bias_idx
+        )
+    else:
+        conv2d_op = DepthConv2D(
+            input_tensor.tflite_tensor_idx,
+            weight_tensor.tflite_tensor_idx,
+            output_tensor.tflite_tensor_idx,
+            0, 0, stride_h, stride_w, bias_idx
+        )
+
     
     ir_model.add_tensors(new_tensors)
     ir_model.add_operator(conv2d_op)
