@@ -7,6 +7,7 @@ from ..ir import Model as IRModel
 from .parse_conv2d import parse_conv2d
 from .parse_avgpool import parse_avgpool2d
 from .parse_pad import parse_pad
+from .parse_add import parse_add
 
 class ModelParser:
     model_path: str
@@ -56,6 +57,8 @@ class ModelParser:
                 parse_conv2d(op, self.tflite_model, model)
             case "AVERAGE_POOL_2D":
                 parse_avgpool2d(op, self.tflite_model, model)
+            case "ADD":
+                parse_add(op, self.tflite_model, model)
             case _:
                 raise NotImplementedError(f"Unsupported op: {op_code}")
 

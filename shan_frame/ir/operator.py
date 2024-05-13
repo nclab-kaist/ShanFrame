@@ -48,8 +48,11 @@ class DepthConv2D(Operator):
 
 
 class Add(Operator):
-    input_idx: tuple[float, float] = (-1, -1)
-
+    input_idx: tuple[float64, float64]
+    def __init__(self, input1_idx: float64, input2_idx: float64, output_idx: float64) -> None:
+        input_idx_list = [input1_idx, input2_idx]
+        super().__init__(input_idx_list, output_idx, OperatorType.ADD)
+        self.input_idx = (input1_idx, input2_idx)
 
 class Mul(Operator):
     input_idx: tuple[float, float] = (-1, -1)
