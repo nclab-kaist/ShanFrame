@@ -1,4 +1,4 @@
-from ir import Model
+from ..ir import Model
 
 
 class CodeGenerator:

@@ -5,7 +5,7 @@ from tflite import Model as TFliteModel
 from tflite import Operator as TFliteOP
 from tflite import TensorType, BuiltinOperator
 
-from ir import Tensor as IRTensor
+from .ir import Quantization, Tensor as IRTensor
 
 
 class TFLiteTensorWrpper:
@@ -16,16 +16,72 @@ class TFLiteTensorWrpper:
         self.qnn_params = qnn_params
 
 
-def get_input_tensors(op: TFliteOP, model: TFliteModel) -> list[TFLiteTensorWrpper]:
+def get_input_tensors(op: TFliteOP, model: TFliteModel) -> list[IRTensor]:
     inputs = op.InputsAsNumpy()
-    assert inputs != 0, f"no input found in {op}"
-    return _get_wrapper_tensors(iter(inputs), model)
+    assert isinstance(inputs, np.ndarray), f"no input found in {op}"
+    return _get_tensors(iter(inputs), model)
 
 
-def get_output_tensors(op: TFliteOP, model: TFliteModel) -> list[TFLiteTensorWrpper]:
+def get_output_tensors(op: TFliteOP, model: TFliteModel) -> list[IRTensor]:
     inputs = op.OutputsAsNumpy()
-    assert inputs != 0, f"no input found in {op}"
-    return _get_wrapper_tensors(iter(inputs), model)
+    assert isinstance(inputs, np.ndarray), f"no output found in {op}"
+    return _get_tensors(iter(inputs), model)
+
+
+def _get_tensors(tensor_index_list: Iterator[np.float64], model: TFliteModel) -> list[IRTensor]:
+    ret = []
+    subgraph = model.Subgraphs(0)
+    assert subgraph is not None, "No subgraph found"
+    for idx in tensor_index_list:
+        ir_tensor = IRTensor()
+        ir_tensor.tflite_tensor_idx = idx
+        tensor = subgraph.Tensors(idx)
+
+        assert tensor is not None, f"Tensor at idx {idx} found"
+        # determine shape
+        tensor_shape = tensor.ShapeAsNumpy()
+        assert isinstance(
+            tensor_shape, np.ndarray), f"Tensor at idx {idx} has no shape"
+        if tensor_shape.size == 4:
+            ir_tensor.dim_n, ir_tensor.dim_h, ir_tensor.dim_w, ir_tensor.dim_c = tensor_shape
+        elif tensor_shape.size == 1:
+            ir_tensor.dim_n, ir_tensor.dim_h, ir_tensor.dim_w = 1, 1, 1
+            ir_tensor.dim_c = tensor_shape[0]
+        else:
+            raise RuntimeError("shape size not 4 or 1")
+
+        # determine data
+        buffer_idx = tensor.Buffer()
+        buffer = model.Buffers(buffer_idx)
+        data = np.ndarray([], np.float64)
+        if buffer is not None:
+            data_tmp = buffer.DataAsNumpy()
+            if isinstance(data_tmp, np.ndarray):
+                data = data_tmp
+        ir_tensor.data = data
+
+        # determine quantization
+        tflite_qparams = tensor.Quantization()
+        if tflite_qparams is None:
+            # TODO: support floating-point operators with no quantization
+            raise NotImplementedError("Quantization parameters not found")
+        scale = tflite_qparams.ScaleAsNumpy()
+        zero_point = tflite_qparams.ZeroPointAsNumpy()
+        if isinstance(scale, np.ndarray) and isinstance(zero_point, np.ndarray):
+            if scale.size != 1 and zero_point.size != 1:
+                ir_tensor.quant_type = Quantization.PER_CHANNEL
+            elif scale.size == 1 and zero_point.size == 1:
+                ir_tensor.quant_type = Quantization.PER_TENSOR
+            else:
+                raise NotImplementedError("Unsupported quantization setup")
+            ir_tensor.scales = scale
+            ir_tensor.zero_point = zero_point
+        else:
+            ir_tensor.quant_type = Quantization.NO_QUANTIZATION
+            ir_tensor.scales = np.ndarray([0], np.float64)
+            ir_tensor.zero_point = np.ndarray([0], np.float64)
+        ret.append(ir_tensor)
+    return ret
 
 
 def _get_wrapper_tensors(tensor_index_list: Iterator[np.float64], model: TFliteModel):
@@ -66,15 +122,6 @@ def _get_wrapper_tensors(tensor_index_list: Iterator[np.float64], model: TFliteM
         ret.append(TFLiteTensorWrpper(
             idx, tensor, buffer, qparams_to_tensor_wrapper))
     return ret
-
-
-def getTensorTypeStr(type):
-    if TensorType.INT8 == type:
-        return "int8"
-    if TensorType.UINT8 == type:
-        return "uint8"
-    if TensorType.FLOAT32 == type:
-        return "float32"
 
 
 def get_np_from_wrapper(wrapper):

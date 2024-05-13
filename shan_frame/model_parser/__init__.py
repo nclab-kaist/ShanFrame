@@ -1,9 +1,10 @@
 
-from abc import ABC, abstractmethod
 from tflite import Model as TFliteModel
 from tflite import Operator as TFliteOP
 from tflite import SubGraph, BuiltinOperator
-from ir import Model
+from ..ir import Model as IRModel
+
+from .parse_conv2d import parse_conv2d
 
 
 class ModelParser:
@@ -15,18 +16,18 @@ class ModelParser:
         buf = open(model_path, "rb").read()
         self.tflite_model = TFliteModel.GetRootAs(buf)
 
-    def parse_model(self) -> Model:
+    def parse_model(self) -> IRModel:
         subgraph = self.tflite_model.Subgraphs(0)
         if subgraph is None:
             raise RuntimeError("subgraph 0 not exist")
-
+        model: IRModel = IRModel()
         operators_len: int = subgraph.OperatorsLength()
         skip_next_ops = 0
         for i in range(operators_len):
             if skip_next_ops > 0:
                 skip_next_ops -= 1
                 continue
-            op = subgraph.Operators(i)
+            op: TFliteOP | None = subgraph.Operators(i)
             if op is None:
                 continue
             if i + 2 < operators_len - 2:
@@ -42,14 +43,14 @@ class ModelParser:
                     skip_next_ops = 2
                     raise NotImplementedError("parse se block")
 
-        raise NotImplementedError("ir.parse_model")
+            self._handleOperator(op, model)
+        raise NotImplementedError("ModelParser.parse_model()")
 
-    def _handleOperator(self, op):
+    def _handleOperator(self, op: TFliteOP, model: IRModel):
         op_code = self._getOpCodeStr(op)
         match op_code:
             case "CONV_2D":
-                raise NotImplementedError(
-                    "ModelParser._handleOperator(): parse CONV_2D")
+                parse_conv2d(op, self.tflite_model, model)
             case _:
                 raise NotImplementedError(f"Unsupported op: {op_code}")
 
