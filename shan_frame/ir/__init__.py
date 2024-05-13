@@ -8,6 +8,7 @@ class OperatorType(Enum):
     ADD = 2
     MUL = 3
     AVG_POOL_2D = 4
+    PAD = 5
     # To be added
 
 

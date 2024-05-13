@@ -6,6 +6,7 @@ from ..ir import Model as IRModel
 
 from .parse_conv2d import parse_conv2d
 from .parse_avgpool import parse_avgpool2d
+from .parse_pad import parse_pad
 
 class ModelParser:
     model_path: str
@@ -49,6 +50,8 @@ class ModelParser:
     def _handleOperator(self, op: TFliteOP, model: IRModel):
         op_code = self._getOpCodeStr(op)
         match op_code:
+            case "PAD":
+                parse_pad(op, self.tflite_model, model)
             case "CONV_2D" | "DEPTHWISE_CONV_2D":
                 parse_conv2d(op, self.tflite_model, model)
             case "AVERAGE_POOL_2D":

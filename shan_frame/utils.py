@@ -42,13 +42,17 @@ def _get_tensors(tensor_index_list: Iterator[np.float64], model: TFliteModel) ->
         tensor_shape = tensor.ShapeAsNumpy()
         assert isinstance(
             tensor_shape, np.ndarray), f"Tensor at idx {idx} has no shape"
-        if tensor_shape.size == 4:
-            ir_tensor.dim_n, ir_tensor.dim_h, ir_tensor.dim_w, ir_tensor.dim_c = tensor_shape
-        elif tensor_shape.size == 1:
-            ir_tensor.dim_n, ir_tensor.dim_h, ir_tensor.dim_w = 1, 1, 1
-            ir_tensor.dim_c = tensor_shape[0]
-        else:
-            raise RuntimeError("shape size not 4 or 1")
+        match tensor_shape.size:
+            case 4:
+                ir_tensor.dim_n, ir_tensor.dim_h, ir_tensor.dim_w, ir_tensor.dim_c = tensor_shape
+            case 2:
+                ir_tensor.dim_n, ir_tensor.dim_c = 1, 1
+                ir_tensor.dim_h, ir_tensor.dim_w = tensor_shape
+            case 1:
+                ir_tensor.dim_n, ir_tensor.dim_h, ir_tensor.dim_w = 1, 1, 1
+                ir_tensor.dim_c = tensor_shape[0]
+            case _:
+                raise RuntimeError(f"unsupported tensor shape dimension: {tensor_shape.size}")
 
         # determine data
         buffer_idx = tensor.Buffer()

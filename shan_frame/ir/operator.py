@@ -66,3 +66,9 @@ class AvgPool2D(Operator):
         self.input_idx = input_idx
         self.stride_h = stride_h
         self.stride_w = stride_w
+
+
+class Pad(Operator):
+    def __init__(self, input_idx: float64, output_idx: float64) -> None:
+        input_idx_list = [input_idx]
+        super().__init__(input_idx_list, output_idx, OperatorType.PAD)
