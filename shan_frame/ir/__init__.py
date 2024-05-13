@@ -58,7 +58,7 @@ class Tensor:
     data: np.ndarray
     # graph info
     src_op: int = -1
-    dst_op: list[int] = []
+    dst_op: set[int] = set()
     layout: DataLayout = DataLayout.HWC
     addr: int = 0
     # pre-padding
@@ -68,11 +68,12 @@ class Tensor:
 
 class Model:
     tensors: dict[np.float64, Tensor]
-    operators: list[Operator]
+    operators: dict[int, Operator]
+    _operator_counter = 0
 
     def __init__(self) -> None:
         self.tensors = {}
-        self.operators = []
+        self.operators = {}
 
     def add_tensors(self, tensors: Iterable[Tensor]):
         for tensor in tensors:
@@ -81,12 +82,13 @@ class Model:
                 self.tensors[idx] = tensor
 
     def add_operator(self, op: Operator):
-        op_idx = len(self.operators)
-        self.operators.append(op)
+        op_idx = self._operator_counter
+        self._operator_counter += 1
+        self.operators[op_idx] = op
         for input_idx in op.input_idx_list:
             input_tensor = self.tensors.get(input_idx)
             assert input_tensor is not None, f"input {int(input_idx)} of op {op_idx} does not exist"
-            input_tensor.dst_op.append(op_idx)
+            input_tensor.dst_op.add(op_idx)
         output_tensor = self.tensors.get(op.output_idx)
         assert output_tensor is not None, f"output {int(op.output_idx)} of op {op_idx} does not exist"
         output_tensor.src_op = op_idx

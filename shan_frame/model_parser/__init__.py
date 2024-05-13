@@ -9,6 +9,7 @@ from .parse_avgpool import parse_avgpool2d
 from .parse_pad import parse_pad
 from .parse_add import parse_add
 from .parse_reshape import parse_reshape
+from .fuse_pad import fuse_pad
 
 class ModelParser:
     model_path: str
@@ -47,7 +48,8 @@ class ModelParser:
                     raise NotImplementedError("parse se block")
 
             self._handleOperator(op, model)
-        raise NotImplementedError("ModelParser.parse_model()")
+        fuse_pad(model)
+        return model
 
     def _handleOperator(self, op: TFliteOP, model: IRModel):
         op_code = self._getOpCodeStr(op)
