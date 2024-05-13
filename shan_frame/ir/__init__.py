@@ -7,6 +7,7 @@ class OperatorType(Enum):
     DEPTH_CONV_2D = 1
     ADD = 2
     MUL = 3
+    AVG_POOL_2D = 4
     # To be added
 
 

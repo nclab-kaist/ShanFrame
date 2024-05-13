@@ -54,4 +54,15 @@ class Add(Operator):
 class Mul(Operator):
     input_idx: tuple[float, float] = (-1, -1)
     
-    
+
+class AvgPool2D(Operator):
+    input_idx: float64 = float64(-1)
+    stride_h: int = 1
+    stride_w: int = 1
+
+    def __init__(self, input_idx: float64, output_idx: float64, stride_h: int, stride_w: int) -> None:
+        input_idx_list = [input_idx]
+        super().__init__(input_idx_list, output_idx, OperatorType.AVG_POOL_2D)
+        self.input_idx = input_idx
+        self.stride_h = stride_h
+        self.stride_w = stride_w
