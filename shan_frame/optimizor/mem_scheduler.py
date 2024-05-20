@@ -25,7 +25,7 @@ class MemoryScheduler:
         for rect in rect_list:
             # TODO: Add cache feature for optimization
             # find all free blocks (slots)
-            takeup_columns = [rect.start + col for col in range(rect.weight)]
+            takeup_columns = [rect.start + col for col in range(rect.width)]
             total_slots: Blocks = [(0, float('inf'))]
             for col_idx in takeup_columns:
                 current_slots: Blocks = []

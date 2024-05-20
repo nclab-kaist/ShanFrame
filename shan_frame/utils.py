@@ -194,14 +194,14 @@ def getOpCodeStr(op, model: TFliteModel):
 class Rect:
     idx: np.float64
     height: int
-    weight: int
+    width: int
     start: int
     addr: int
 
     def __init__(self, idx: np.float64, height: int, weight: int, start: int, addr: int) -> None:
         self.idx = idx
         self.height = height
-        self.weight = weight
+        self.width = weight
         self.start = start
         self.addr = addr
 
