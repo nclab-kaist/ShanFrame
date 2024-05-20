@@ -5,7 +5,7 @@ from tflite import Model as TFliteModel
 from tflite import Operator as TFliteOP
 from tflite import TensorType, BuiltinOperator
 
-from .ir import Quantization, Tensor as IRTensor
+from .ir import Quantization, Tensor as IRTensor, Model as IRModel
 
 
 class TFLiteTensorWrpper:
@@ -189,3 +189,36 @@ def getOpCodeStr(op, model: TFliteModel):
     builtin_op_code = _build_str_map(BuiltinOperator())
 
     return builtin_op_code[op_code_id]
+
+
+class Rect:
+    idx: np.float64
+    height: int
+    weight: int
+    start: int
+    addr: int
+
+    def __init__(self, idx: np.float64, height: int, weight: int, start: int, addr: int) -> None:
+        self.idx = idx
+        self.height = height
+        self.weight = weight
+        self.start = start
+        self.addr = addr
+
+
+def get_rect(model: IRModel) -> list[Rect]:
+    rect_list = []
+    op_idx_list = list(model.operators.keys())
+    op_idx_list.sort()
+    assert op_idx_list[0] == 0 and op_idx_list[-1] == len(
+        op_idx_list) - 1, "input model is not trimmed"
+    for op_idx in op_idx_list:
+        op = model.operators[op_idx]
+        tensor_idx = op.output_idx
+        tensor = model.tensors[tensor_idx]
+        tensor_size = tensor.dim_n * tensor.dim_h * tensor.dim_w * tensor.dim_c
+        tensor_lifetime = max(tensor.dst_op) - op_idx
+        rect = Rect(tensor_idx, tensor_size,
+                    tensor_lifetime, op_idx, tensor.addr)
+        rect_list.append(rect)
+    return rect_list

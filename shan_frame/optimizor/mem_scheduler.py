@@ -1,20 +1,7 @@
 from numpy import float64
 import matplotlib
 from ..ir import Model
-
-
-class _Rect:
-    idx: float64
-    height: int
-    weight: int
-    start: int
-    addr: int
-
-    def __init__(self, idx: float64, height: int, weight: int, start: int) -> None:
-        self.idx = idx
-        self.height = height
-        self.weight = weight
-        self.start = start
+from utils import get_rect
 
 
 # block: (start, end)
@@ -30,27 +17,13 @@ class MemoryFootprint:
 
 
 class MemoryScheduler:
-    def _get_rect(self, model: Model) -> list[_Rect]:
-        rect_list = []
-        op_idx_list = list(model.operators.keys())
-        op_idx_list.sort()
-        assert op_idx_list[0] == 0 and op_idx_list[-1] == len(
-            op_idx_list) - 1, "input model is not trimmed"
-        for op_idx in op_idx_list:
-            op = model.operators[op_idx]
-            tensor_idx = op.output_idx
-            tensor = model.tensors[tensor_idx]
-            tensor_size = tensor.dim_n * tensor.dim_h * tensor.dim_w * tensor.dim_c
-            tensor_lifetime = max(tensor.dst_op) - op_idx
-            rect = _Rect(tensor_idx, tensor_size, tensor_lifetime, op_idx)
-            rect_list.append(rect)
-        return rect_list
 
-    def schedule(self, model: Model):
-        rect_list = self._get_rect(model)
+    def schedule(self, model: Model) -> int:
+        rect_list = get_rect(model)
         rect_list.sort(key=lambda rect: rect.height, reverse=True)
         footprint = MemoryFootprint(len(model.operators))
         for rect in rect_list:
+            # TODO: Add cache feature for optimization
             # find all free blocks (slots)
             takeup_columns = [rect.start + col for col in range(rect.weight)]
             total_slots: Blocks = [(0, float('inf'))]
@@ -90,7 +63,9 @@ class MemoryScheduler:
                 new_col.append(new_block)
                 new_col.extend(new_col_tail)
                 footprint.columns[col_idx] = new_col
-        raise NotImplementedError()
+        # find peak memory usage
+        peak_mem = int(max(column[-1][1] for column in footprint.columns))
+        return peak_mem
 
 
 def inter_slots(slots1: Blocks, slots2: Blocks) -> Blocks:
