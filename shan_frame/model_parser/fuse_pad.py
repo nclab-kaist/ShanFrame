@@ -53,3 +53,5 @@ def fuse_pad(model: Model):
     
     for op_idx in fused_op_idx:
         model.operators.pop(op_idx)
+        
+    model.trim_operator()

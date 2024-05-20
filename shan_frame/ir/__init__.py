@@ -92,4 +92,17 @@ class Model:
         output_tensor = self.tensors.get(op.output_idx)
         assert output_tensor is not None, f"output {int(op.output_idx)} of op {op_idx} does not exist"
         output_tensor.src_op = op_idx
+
+    def trim_operator(self):
+        op_idx_list = list(self.operators.items())
+        op_idx_list.sort()
+        op_new_idx_dict = {}
         
+        for new_idx in range(0, len(op_idx_list)):
+            old_idx = op_idx_list[new_idx]
+            op_new_idx_dict[old_idx] = new_idx
+            
+        for tensor in self.tensors.values():
+            tensor.src_op = op_new_idx_dict[tensor.src_op]
+            tensor.dst_op = {op_new_idx_dict[idx] for idx in tensor.dst_op}
+            
