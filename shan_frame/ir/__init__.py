@@ -1,72 +1,119 @@
-from abc import ABC, abstractmethod
-from tflite import Model as TFliteModel
-from tflite import SubGraph, Operator, BuiltinOperator
-from .model import Model as IRModel
+from enum import Enum
+import numpy as np
+from typing import Iterable
+
+class OperatorType(Enum):
+    CONV_2D = 0
+    DEPTH_CONV_2D = 1
+    ADD = 2
+    MUL = 3
+    AVG_POOL_2D = 4
+    PAD = 5
+    RESHAPE = 6
+    # To be added
 
 
-class IRGenerator:
-    model_path: str
-    tflite_model: TFliteModel
+class Operator:
+    input_idx_list: list[np.float64]
+    output_idx: np.float64
+    op_type: OperatorType
+    pad_output: bool
 
-    def __init__(self, model_path: str) -> None:
-        self.model_path = model_path
-        buf = open(model_path, "rb").read()
-        self.tflite_model = TFliteModel.GetRootAs(buf)
+    def __init__(self, input_idx_list: list[np.float64], output_idx: np.float64, op_type: OperatorType) -> None:
+        self.input_idx_list = input_idx_list
+        self.output_idx = output_idx
+        self.op_type = op_type
 
-    def parse_model(self) -> IRModel:
-        subgraph = self.tflite_model.Subgraphs(0)
-        if subgraph is None:
-            raise RuntimeError("subgraph 0 not exist")
+class DataLayout(Enum):
+    UNKNOWN = 0
+    HWC = 1
+    CHW = 2
 
-        operators_len: int = subgraph.OperatorsLength()
-        skip_next_ops = 0
-        for i in range(operators_len):
-            if skip_next_ops > 0:
-                skip_next_ops -= 1
-                continue
-            op = subgraph.Operators(i)
-            if op is None:
-                continue
-            if i + 2 < operators_len - 2:
-                next_op = subgraph.Operators(i + 1)
-                if next_op is None:
-                    raise RuntimeError("next_op is none")
-                next_next_op = subgraph.Operators(i + 2)
-                if next_next_op is None:
-                    raise RuntimeError("next_next_op is none")
-                three_op_sequence = [op, next_op, next_next_op]
-                if self.checkIfRequireSElementmult(three_op_sequence):
-                    # SE block detected
-                    skip_next_ops = 2
-                    raise NotImplementedError("parse se block")
 
-        raise NotImplementedError("ir.parse_model")
+class DataType(Enum):
+    INT8 = 0
+    INT32 = 1
+    FLOAT32 = 2
 
-    def getOpCodeStr(self, op: Operator) -> str:
-        op_code_list_idx = op.OpcodeIndex()
-        op_codes = self.tflite_model.OperatorCodes(op_code_list_idx)
-        if op_codes is None:
-            raise RuntimeError("mdoel op codes is none")
-        op_code_id = op_codes.DeprecatedBuiltinCode()
 
-        def _build_str_map(obj):
-            ret = {}
-            for field_name in dir(obj):
-                if not field_name.startswith("_"):
-                    field_value = getattr(obj, field_name)
-                    if isinstance(field_value, int):
-                        ret[field_value] = field_name
-            return ret
+class Quantization(Enum):
+    NO_QUANTIZATION = 0
+    PER_CHANNEL = 1
+    PER_TENSOR = 2
 
-        builtin_op_code = _build_str_map(BuiltinOperator())
+class Tensor:
+    name: str
+    tflite_tensor_idx: np.float64
+    # shape
+    dim_n: int = -1
+    dim_h: int = -1
+    dim_w: int = -1
+    dim_c: int = -1
+    # quant
+    quant_type: Quantization
+    scales: np.ndarray
+    zero_point: np.ndarray
+    # data
+    data_type: DataType = DataType.INT8
+    data: np.ndarray
+    # graph info
+    src_op: int = -1
+    dst_op: set[int]
+    layout: DataLayout = DataLayout.HWC
+    addr: int = 0
+    # pre-padding
+    prepad_h: int = 0
+    prepad_w: int = 0
+    def __init__(self) -> None:
+        self.dst_op = set()
 
-        return builtin_op_code[op_code_id]
 
-    def checkIfRequireSElementmult(self, three_op_sequence: list[Operator]) -> bool:
-        if (
-            self.getOpCodeStr(three_op_sequence[0]) == "ADD"
-            and self.getOpCodeStr(three_op_sequence[1]) == "MUL"
-            and self.getOpCodeStr(three_op_sequence[2]) == "MUL"
-        ):
-            return True
-        return False
+class Model:
+    tensors: dict[np.float64, Tensor]
+    operators: dict[int, Operator]
+    _operator_counter = 0
+
+    def __init__(self) -> None:
+        self.tensors = {}
+        self.operators = {}
+
+    def add_tensors(self, tensors: Iterable[Tensor]):
+        for tensor in tensors:
+            idx = tensor.tflite_tensor_idx
+            if self.tensors.get(idx) is None:
+                self.tensors[idx] = tensor
+
+    def add_operator(self, op: Operator):
+        op_idx = self._operator_counter
+        self._operator_counter += 1
+        self.operators[op_idx] = op
+        for input_idx in op.input_idx_list:
+            input_tensor = self.tensors.get(input_idx)
+            assert input_tensor is not None, f"input {int(input_idx)} of op {op_idx} does not exist"
+            input_tensor.dst_op.add(op_idx)
+        output_tensor = self.tensors.get(op.output_idx)
+        assert output_tensor is not None, f"output {int(op.output_idx)} of op {op_idx} does not exist"
+        output_tensor.src_op = op_idx
+
+    def trim_operator(self):
+        op_idx_list = list(self.operators.keys())
+        op_idx_list.sort()
+        op_new_idx_dict = {}
+        
+        for new_idx in range(0, len(op_idx_list)):
+            old_idx = op_idx_list[new_idx]
+            op_new_idx_dict[old_idx] = new_idx
+            
+        for tensor in self.tensors.values():
+            if tensor.src_op >= 0:
+                tensor.src_op = op_new_idx_dict[tensor.src_op]
+            tensor.dst_op = {op_new_idx_dict[idx] for idx in tensor.dst_op}
+            
+        for old_idx, new_idx in op_new_idx_dict.items():
+            self.operators[new_idx] = self.operators.pop(old_idx)
+            
+    def __str__(self) -> str:
+        result = ""
+        for idx, op in self.operators.items():
+            result += f"{idx}: {op.op_type}\n"
+        return result 

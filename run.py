@@ -1,12 +1,9 @@
-from shan_frame import compile_model_at, TargetArch
+from shan_frame import compile_model_at
 
-model_path = "./example/ad_small_int8.tflite"
+model_path = "./example/mcunet-5fps_vww.tflite"
 output_dir = "./out"
-target_arch = TargetArch.CORTEX_M7
-sram_limit = 1024
-flash_limit = 1024
 
-(sram_usage, flash_usage) = compile_model_at(
-    model_path, output_dir, target_arch, sram_limit, flash_limit)
+sram_usage = compile_model_at(
+    model_path, output_dir)
 
-print(f"sram usage: {sram_usage}, flash_usage: {flash_usage}")
+print(f"sram usage: {sram_usage}")

@@ -1,21 +1,17 @@
-from .target_arch import TargetArch
-from .ir import IRGenerator
-from .optimizor import Optimizor
-from .code_generator import generate_code
-
+from .model_parser import ModelParser
+from .optimizor import Optimizer
+from .code_generator import CodeGenerator
 
 def compile_model_at(
     model_path: str,
     output_dir: str,
-    target_arch: TargetArch,
-    sram_limit: int,
-    flash_limit: int
-) -> tuple[int, int]:
-    model = IRGenerator(model_path).parse_model()
-    optimizor = Optimizor(sram_limit, flash_limit,
-                          model, output_dir, target_arch)
-    optimizor.optimize()
-    sram_usage = optimizor.sram_current
-    flash_usage = optimizor.flash_current
-    generate_code(output_dir, optimizor.model)
-    return (sram_usage, flash_usage)
+) -> int:
+    model = ModelParser(model_path).parse_model()
+    
+    optimizer = Optimizer(model)
+    (model, sram_usage)= optimizer.optimize(1.0)
+    
+    code_generator = CodeGenerator(output_dir)
+    code_generator.generate(model)
+    
+    return sram_usage
