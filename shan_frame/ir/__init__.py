@@ -62,8 +62,8 @@ class Tensor:
     layout: DataLayout = DataLayout.HWC
     addr: int = 0
     # pre-padding
-    prepad_h: int = -1
-    prepad_w: int = -1
+    prepad_h: int = 0
+    prepad_w: int = 0
     def __init__(self) -> None:
         self.dst_op = set()
 
