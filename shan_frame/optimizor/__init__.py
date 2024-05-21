@@ -18,6 +18,8 @@ class Optimizer:
         
         # TODO: iterative optimization
         
+        visualize_memory(self.model)
+        
         raise NotImplementedError("Optimizer.optimize()")
     
             
