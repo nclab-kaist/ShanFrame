@@ -5,8 +5,8 @@ from tflite import Model as TFliteModel
 from tflite import Operator as TFliteOP
 from tflite import TensorType, BuiltinOperator
 
-from .ir import Quantization, Tensor as IRTensor, Model as IRModel
-
+from .ir import Quantization, Tensor as IRTensor, Model as IRModel, OperatorType
+from .ir.operator import Conv2D, DepthConv2D
 
 class TFLiteTensorWrpper:
     def __init__(self, tensor_idx, tensor, buffer, qnn_params):
@@ -52,7 +52,8 @@ def _get_tensors(tensor_index_list: Iterator[np.float64], model: TFliteModel) ->
                 ir_tensor.dim_n, ir_tensor.dim_h, ir_tensor.dim_w = 1, 1, 1
                 ir_tensor.dim_c = tensor_shape[0]
             case _:
-                raise RuntimeError(f"unsupported tensor shape dimension: {tensor_shape.size}")
+                raise RuntimeError(
+                    f"unsupported tensor shape dimension: {tensor_shape.size}")
 
         # determine data
         buffer_idx = tensor.Buffer()
@@ -205,6 +206,9 @@ class Rect:
         self.start = start
         self.addr = addr
 
+    def __str__(self) -> str:
+        return f"{{h: {self.height}, w: {self.width}, ({self.start}, {self.addr})}}"
+
 
 def get_rect(model: IRModel) -> list[Rect]:
     rect_list = []
@@ -217,7 +221,15 @@ def get_rect(model: IRModel) -> list[Rect]:
         tensor_idx = op.output_idx
         tensor = model.tensors[tensor_idx]
         tensor_size = tensor.dim_n * tensor.dim_h * tensor.dim_w * tensor.dim_c
-        tensor_lifetime = max(tensor.dst_op) - op_idx
+        # determine lifetime
+        tensor_lifetime = 1
+        for dst_op_idx in tensor.dst_op:
+            lifetime = dst_op_idx - op_idx + 1
+            dst_op = model.operators[dst_op_idx]
+            if (isinstance(dst_op, DepthConv2D) or isinstance(dst_op, Conv2D)) and dst_op.io_overlap:
+                lifetime = dst_op_idx - op_idx
+            if tensor_lifetime < lifetime:
+                tensor_lifetime = lifetime
         rect = Rect(tensor_idx, tensor_size,
                     tensor_lifetime, op_idx, tensor.addr)
         rect_list.append(rect)

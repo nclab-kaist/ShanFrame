@@ -10,6 +10,7 @@ class Conv2D(Operator):
     stride_h: int = 1
     stride_w: int = 1
     bias_idx: float64 = float64(-1)
+    io_overlap: bool = True
 
     def __init__(self, input_idx: float64, weight_idx: float64, output_idx: float64, pad_h: int = 0, pad_w: int = 0, stride_h: int = 0, stride_w: int = 0, bias_idx: float64 = float64(-1)) -> None:
         input_idx_list = [input_idx, weight_idx]
@@ -32,6 +33,7 @@ class DepthConv2D(Operator):
     stride_h: int = 1
     stride_w: int = 1
     bias_idx: float64 = float64(-1)
+    io_overlap: bool = True
 
     def __init__(self, input_idx: float64, weight_idx: float64, output_idx: float64, pad_h: int = 0, pad_w: int = 0, stride_h: int = 0, stride_w: int = 0, bias_idx: float64 = float64(-1)) -> None:
         input_idx_list = [input_idx, weight_idx]

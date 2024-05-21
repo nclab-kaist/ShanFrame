@@ -23,7 +23,7 @@ def fuse_pad(model: Model):
             dst_op = model.operators[dst_op_idx]
             if dst_op.op_type != OperatorType.CONV_2D and dst_op.op_type != OperatorType.DEPTH_CONV_2D:
                 can_fully_fuse = False
-                break
+                # print(f"op {op_idx} outputs to {dst_op_idx}: {dst_op}, {dst_op.op_type}")
         if not can_fully_fuse:
             continue
 
@@ -34,19 +34,18 @@ def fuse_pad(model: Model):
         diff_w = input_tensor.dim_w - output_tensor.dim_w
         assert diff_w % 2 == 0, "weight difference not even"
         pad_w = diff_w // 2
+        
         for dst_op_idx in output_tensor.dst_op:
             dst_op = model.operators[dst_op_idx]
-            if isinstance(dst_op, DepthConv2D) or isinstance(dst_op, Conv2D):
-                dst_op.pad_h = pad_h
-                dst_op.pad_w = pad_w
-                dst_op.input_idx_list[0] = input_idx
-                dst_op.input_idx = input_idx
-                input_tensor.dst_op.add(dst_op_idx)
-                output_tensor.dst_op.remove(dst_op_idx)
+            assert isinstance(dst_op, DepthConv2D) or isinstance(dst_op, Conv2D)
+            dst_op.pad_h = pad_h
+            dst_op.pad_w = pad_w
+            dst_op.input_idx_list[0] = input_idx
+            dst_op.input_idx = input_idx
+            input_tensor.dst_op.add(dst_op_idx)
+            input_tensor.dst_op.remove(op_idx)
         
         # delete output tensor
-        assert len(
-            output_tensor.dst_op) == 0, "pad output should have no more usage"
         model.tensors.pop(output_idx)
         # mark op as to delete
         fused_op_idx.append(op_idx)

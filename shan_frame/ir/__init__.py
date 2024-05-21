@@ -58,12 +58,14 @@ class Tensor:
     data: np.ndarray
     # graph info
     src_op: int = -1
-    dst_op: set[int] = set()
+    dst_op: set[int]
     layout: DataLayout = DataLayout.HWC
     addr: int = 0
     # pre-padding
     prepad_h: int = -1
     prepad_w: int = -1
+    def __init__(self) -> None:
+        self.dst_op = set()
 
 
 class Model:
@@ -94,7 +96,7 @@ class Model:
         output_tensor.src_op = op_idx
 
     def trim_operator(self):
-        op_idx_list = list(self.operators.items())
+        op_idx_list = list(self.operators.keys())
         op_idx_list.sort()
         op_new_idx_dict = {}
         
@@ -103,6 +105,15 @@ class Model:
             op_new_idx_dict[old_idx] = new_idx
             
         for tensor in self.tensors.values():
-            tensor.src_op = op_new_idx_dict[tensor.src_op]
+            if tensor.src_op >= 0:
+                tensor.src_op = op_new_idx_dict[tensor.src_op]
             tensor.dst_op = {op_new_idx_dict[idx] for idx in tensor.dst_op}
             
+        for old_idx, new_idx in op_new_idx_dict.items():
+            self.operators[new_idx] = self.operators.pop(old_idx)
+            
+    def __str__(self) -> str:
+        result = ""
+        for idx, op in self.operators.items():
+            result += f"{idx}: {op.op_type}\n"
+        return result 

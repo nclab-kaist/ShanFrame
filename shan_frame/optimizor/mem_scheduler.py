@@ -1,7 +1,7 @@
 from numpy import float64
 import matplotlib
 from ..ir import Model
-from utils import get_rect
+from ..utils import get_rect
 
 
 # block: (start, end)
@@ -15,12 +15,20 @@ class MemoryFootprint:
     def __init__(self, op_num: int) -> None:
         self.columns = [[] for _ in range(op_num)]
 
+    def __str__(self) -> str:
+        result = ""
+        for idx, col in enumerate(self.columns):
+            result += f"{idx}: "
+            for block in col:
+                result += f"({(int(block[0]), int(block[1]))})"
+            result += "\n"
+        return result
 
 class MemoryScheduler:
 
     def schedule(self, model: Model) -> int:
         rect_list = get_rect(model)
-        rect_list.sort(key=lambda rect: rect.height, reverse=True)
+        rect_list.sort(key=lambda rect: (rect.width, rect.height), reverse=True)
         footprint = MemoryFootprint(len(model.operators))
         for rect in rect_list:
             # TODO: Add cache feature for optimization
@@ -32,17 +40,23 @@ class MemoryScheduler:
                 col = footprint.columns[col_idx]
                 last_end = 0
                 for start, end in col:
-                    free_size = last_end - start
+                    free_size = start - last_end
                     if free_size >= rect.height:
                         current_slots.append((last_end, start))
                     last_end = end
                 current_slots.append((last_end, float('inf')))
+                # print(f"col {col_idx} slots: {current_slots}")
                 total_slots = inter_slots(total_slots, current_slots)
+                # print(f"total slots after inter: {total_slots}")
+            total_slots = list(
+                filter(lambda slot: slot[1]-slot[0] >= rect.height, total_slots))
             total_slots.sort(key=lambda slot: slot[1]-slot[0])
+            # print(total_slots)
             addr_head = total_slots[0][0]
             addr_tail = addr_head + rect.height
             model.tensors[rect.idx].addr = int(addr_head)
             rect.addr = int(addr_head)
+            # print(rect)
             # mark memory block as taken
             for col_idx in takeup_columns:
                 col = footprint.columns[col_idx]
@@ -63,8 +77,11 @@ class MemoryScheduler:
                 new_col.append(new_block)
                 new_col.extend(new_col_tail)
                 footprint.columns[col_idx] = new_col
+            # print(footprint)
+            # input()
         # find peak memory usage
-        peak_mem = int(max(column[-1][1] for column in footprint.columns))
+        peak_mem = int(max(column[-1][1] if len(column) > 0
+                       else 0 for column in footprint.columns))
         return peak_mem
 
 
@@ -79,6 +96,6 @@ def inter_slots(slots1: Blocks, slots2: Blocks) -> Blocks:
                 slots2_skip += 1
                 continue
             # slot1 and slot2 has intersection
-            start, end = min(start1, start2), max(end1, end2)
+            start, end = max(start1, start2), min(end1, end2)
             inter_slots.append((start, end))
     return inter_slots
