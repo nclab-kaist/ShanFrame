@@ -6,8 +6,8 @@ from ..ir import Model
 from ..utils import get_rect
 
 
-def visualize_memory(model: Model, scale=1024):
-    plt.ion()
+def visualize_memory(model: Model, scale=1024, path = "footprint.png"):
+    plt.ioff()
     fig, ax = plt.subplots()
     rects = get_rect(model)
 
@@ -28,4 +28,10 @@ def visualize_memory(model: Model, scale=1024):
     ax.set_xlim(0, x_axis_max)
     ax.set_ylim(0, y_axis_max)
 
-    plt.savefig("./fig.png")
+    # set titles
+    fig.suptitle("Memory footprint per layer during inference")
+    ax.set_xlabel("Layer index")
+    ax.set_ylabel("Memory footprint (Byte)")
+
+    plt.savefig(path)
+    plt.close()
