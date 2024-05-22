@@ -62,7 +62,16 @@ def _get_tensors(tensor_index_list: Iterator[np.float64], model: TFliteModel) ->
         if buffer is not None:
             data_tmp = buffer.DataAsNumpy()
             if isinstance(data_tmp, np.ndarray):
-                data = data_tmp
+                match tensor.Type():
+                    case TensorType.INT8:
+                        np_type = np.int8
+                    case TensorType.INT32:
+                        np_type = np.int32
+                    case TensorType.FLOAT32:
+                        np_type = np.float32
+                    case _:
+                        raise NotImplementedError(f"unsupported tensor type {tensor.Type()}")
+                data = np.frombuffer(data_tmp, dtype=np_type)
         ir_tensor.data = data
 
         # determine quantization
