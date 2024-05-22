@@ -108,7 +108,7 @@ class MemoryScheduler:
                 op.buffer_size = buf_rect.height
             else:
                 # find largest slot that does not raise peak mem
-                total_slots.sort(key=lambda slot: slot[1]-slot[0] if slot[1]!=float("inf") else peak_mem - slot[0])
+                total_slots.sort(key=lambda slot: slot[1]-slot[0] if slot[1]!=float("inf") else peak_mem - slot[0], reverse=True)
                 slot = total_slots[0]
                 buf_rect.addr = int(slot[0])
                 op.buffer_addr = buf_rect.addr
