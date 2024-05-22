@@ -11,6 +11,13 @@ class Optimizer:
     def __init__(self, model: Model) -> None:
         self.mem_scheduler = MemoryScheduler()
         self.model = model
+        for op in self.model.operators.values():
+            if isinstance(op, Conv2D):
+                weight = self.model.tensors[op.weight_idx]
+                if weight.dim_h == weight.dim_w == 1:
+                    op.io_overlap = True
+            elif isinstance(op, DepthConv2D):
+                op.io_overlap = True
         self.min_peak_mem_usage = self.mem_scheduler.schedule(model)
         pass
 

@@ -10,7 +10,7 @@ class Conv2D(Operator):
     stride_h: int = 1
     stride_w: int = 1
     bias_idx: float64 = float64(-1)
-    io_overlap: bool = True
+    io_overlap: bool = False
     buffer_size: int = 0
     buffer_addr: int = 0
 
@@ -44,7 +44,7 @@ class DepthConv2D(Operator):
     stride_h: int = 1
     stride_w: int = 1
     bias_idx: float64 = float64(-1)
-    io_overlap: bool = True
+    io_overlap: bool = False
     buffer_size: int = 0
     buffer_addr: int = 0
 
