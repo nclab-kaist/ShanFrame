@@ -25,6 +25,7 @@ class Optimizer:
             # try to de-overlap input and output
             if op.io_overlap:
                 op.io_overlap = False
+                self.set_data_layout()
                 current_peak_mem = self.mem_scheduler.schedule(self.model)
                 if current_peak_mem > self.min_peak_mem_usage * sram_scale:
                     op.io_overlap = True
@@ -35,17 +36,15 @@ class Optimizer:
                 input_tensor = self.model.tensors[op.input_idx]
                 input_tensor.prepad_h, input_tensor.prepad_w = op.pad_h, op.pad_w
                 op.pad_h, op.pad_w = 0, 0
+                self.set_data_layout()
                 current_peak_mem = self.mem_scheduler.schedule(self.model)
                 if current_peak_mem > self.min_peak_mem_usage * sram_scale:
                     op.pad_h, op.pad_w = input_tensor.prepad_h, input_tensor.prepad_w
                     input_tensor.prepad_h, input_tensor.prepad_w = 0, 0
 
-
+        self.set_data_layout()
         final_peak_mem = self.mem_scheduler.schedule(self.model)
         visualize_memory(self.model)
-        
-        # determine optimal data layout for intermediate tensors
-        self.set_data_layout()
         
         return (self.model, final_peak_mem)
     

@@ -1,4 +1,4 @@
-from ..ir import Operator, OperatorType
+from ..ir import DataLayout, Operator, OperatorType, Model
 from numpy import float64
 
 
@@ -11,6 +11,8 @@ class Conv2D(Operator):
     stride_w: int = 1
     bias_idx: float64 = float64(-1)
     io_overlap: bool = True
+    buffer_size: int = 0
+    buffer_addr: int = 0
 
     def __init__(self, input_idx: float64, weight_idx: float64, output_idx: float64, pad_h: int = 0, pad_w: int = 0, stride_h: int = 0, stride_w: int = 0, bias_idx: float64 = float64(-1)) -> None:
         input_idx_list = [input_idx, weight_idx]
@@ -25,6 +27,14 @@ class Conv2D(Operator):
         self.stride_w = stride_w
         self.bias_idx = bias_idx
     
+    def min_buffer_size(self, model: Model) -> int:
+        weight_tensor = model.tensors[self.weight_idx]
+        # if is pointwise, no buffer needed
+        if weight_tensor.dim_h == weight_tensor.dim_w == 1:
+            return 0
+        # minimum im2col buffer is one column (input channel number)
+        return weight_tensor.dim_h * weight_tensor.dim_w
+    
 class DepthConv2D(Operator):
     input_idx: float64 = float64(-1)
     weight_idx: float64 = float64(-1)
@@ -34,6 +44,8 @@ class DepthConv2D(Operator):
     stride_w: int = 1
     bias_idx: float64 = float64(-1)
     io_overlap: bool = True
+    buffer_size: int = 0
+    buffer_addr: int = 0
 
     def __init__(self, input_idx: float64, weight_idx: float64, output_idx: float64, pad_h: int = 0, pad_w: int = 0, stride_h: int = 0, stride_w: int = 0, bias_idx: float64 = float64(-1)) -> None:
         input_idx_list = [input_idx, weight_idx]
@@ -48,6 +60,18 @@ class DepthConv2D(Operator):
         self.stride_w = stride_w
         self.bias_idx = bias_idx
 
+    def min_buffer_size(self, model: Model) -> int:
+        input_tensor = model.tensors[self.input_idx]
+        buffer_h = input_tensor.dim_h + input_tensor.prepad_h + self.pad_h
+        buffer_w = input_tensor.dim_w + input_tensor.prepad_w + self.pad_w
+        channel_size = buffer_h * buffer_w
+        # if padding is fused, nothing we can do
+        if self.pad_h != 0 or self.pad_w != 0:
+            return channel_size
+        # if input data layout is CHW, no data conversion buffer needed
+        if input_tensor.layout == DataLayout.CHW:
+            return 0
+        return channel_size
 
 class Add(Operator):
     input_idx: tuple[float64, float64]

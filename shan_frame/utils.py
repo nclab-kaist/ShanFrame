@@ -243,3 +243,26 @@ def get_rect(model: IRModel) -> list[Rect]:
                     tensor_lifetime, op_idx, tensor.addr)
         rect_list.append(rect)
     return rect_list
+
+
+def get_buf_rect(model: IRModel) -> list[Rect]:
+    rect_list = []
+    op_idx_list = list(model.operators.keys())
+    op_idx_list.sort()
+    assert op_idx_list[0] == 0 and op_idx_list[-1] == len(
+        op_idx_list) - 1, "input model is not trimmed"
+    for op_idx in op_idx_list:
+        op = model.operators[op_idx]
+        # if a buffer is required, generate rect
+        if not (isinstance(op, DepthConv2D) or isinstance(op, Conv2D)):
+            continue
+        min_buffer_size = op.min_buffer_size(model)
+        if min_buffer_size == 0:
+            continue
+        # buffer is required
+        buf_start = 0 if op_idx == 0 else op_idx - 1
+        buf_lifetime = op_idx + 1 - buf_start
+        buffer_rect = Rect(np.float64(op_idx), min_buffer_size,
+                           buf_lifetime, buf_start, 0)
+        rect_list.append(buffer_rect)
+    return rect_list
