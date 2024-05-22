@@ -33,7 +33,8 @@ class Conv2D(Operator):
         if weight_tensor.dim_h == weight_tensor.dim_w == 1:
             return 0
         # minimum im2col buffer is one column (input channel number)
-        return weight_tensor.dim_h * weight_tensor.dim_w
+        input_tensor = model.tensors[self.input_idx]
+        return weight_tensor.dim_h * weight_tensor.dim_w * input_tensor.dim_c
     
 class DepthConv2D(Operator):
     input_idx: float64 = float64(-1)
