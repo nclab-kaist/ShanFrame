@@ -6,7 +6,7 @@ from ..ir import Model
 from ..utils import get_rect
 
 
-def visualize_memory(model: Model, scale=1024, path = "footprint.png"):
+def visualize_memory(model: Model, peak_mem = 0, scale=1024, path = "footprint.png"):
     plt.ioff()
     fig, ax = plt.subplots()
     rects = get_rect(model)
@@ -25,6 +25,8 @@ def visualize_memory(model: Model, scale=1024, path = "footprint.png"):
 
     x_axis_max = max([rect.start + rect.width for rect in rects]) + 1
     y_axis_max = max([rect.addr + rect.height for rect in rects]) + 1
+    if y_axis_max < peak_mem:
+        y_axis_max = peak_mem
     ax.set_xlim(0, x_axis_max)
     ax.set_ylim(0, y_axis_max)
 

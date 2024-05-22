@@ -44,7 +44,7 @@ class Optimizer:
 
         self.set_data_layout()
         final_peak_mem = self.mem_scheduler.schedule(self.model)
-        visualize_memory(self.model)
+        visualize_memory(self.model, peak_mem=final_peak_mem)
         
         return (self.model, final_peak_mem)
     
