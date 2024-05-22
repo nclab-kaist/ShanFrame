@@ -39,7 +39,7 @@ def parse_pad(op: TFliteOP, tflite_model: TFliteModel, ir_model: IRModel):
     output_tensor = output_tensors[0]
 
     # tensor types
-    assert input_tensor.data_type == output_tensor.data_type, "tensor type not consistent"
+    assert input_tensor.data.dtype == output_tensor.data.dtype, "tensor type not consistent"
 
     pad_op = Pad(
         input_tensor.tflite_tensor_idx,

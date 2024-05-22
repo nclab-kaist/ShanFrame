@@ -57,7 +57,7 @@ class Add(Operator):
         self.input_idx = (input1_idx, input2_idx)
 
 class Mul(Operator):
-    input_idx: tuple[float, float] = (-1, -1)
+    input_idx: tuple[float64, float64]
     
 
 class AvgPool2D(Operator):

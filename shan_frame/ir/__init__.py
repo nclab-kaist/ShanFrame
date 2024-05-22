@@ -54,7 +54,6 @@ class Tensor:
     scales: np.ndarray
     zero_point: np.ndarray
     # data
-    data_type: DataType = DataType.INT8
     data: np.ndarray
     # graph info
     src_op: int = -1

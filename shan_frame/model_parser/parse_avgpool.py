@@ -40,7 +40,7 @@ def parse_avgpool2d(op: TFliteOP, tflite_model: TFliteModel, ir_model: IRModel):
     output_tensor = output_tensors[0]
 
     # tensor types
-    assert input_tensor.data_type == output_tensor.data_type, "tensor type not consistent"
+    assert input_tensor.data.dtype == output_tensor.data.dtype, "tensor type not consistent"
 
     # pool parameters
     assert op.BuiltinOptionsType() == BuiltinOptions.Pool2DOptions

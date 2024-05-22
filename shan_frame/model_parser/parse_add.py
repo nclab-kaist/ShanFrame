@@ -38,8 +38,8 @@ def parse_add(op: TFliteOP, tflite_model: TFliteModel, ir_model: IRModel):
     output_tensor = output_tensors[0]
 
     # tensor types
-    assert input1_tensor.data_type == input2_tensor.data_type, "input tensor types not consistent"
-    assert input1_tensor.data_type == output_tensor.data_type, "output tensor type not consistent"
+    assert input1_tensor.data.dtype == input2_tensor.data.dtype, "input tensor types not consistent"
+    assert input1_tensor.data.dtype == output_tensor.data.dtype, "output tensor type not consistent"
 
     add_op = Add(
         input1_tensor.tflite_tensor_idx,

@@ -70,9 +70,9 @@ def parse_conv2d(op: TFliteOP, tflite_model: TFliteModel, ir_model: IRModel):
         assert input_tensor.dim_n == output_tensor.dim_n, "output batches not match"
     
     # tensor types
-    input_type = input_tensor.data_type
-    output_type = output_tensor.data_type
-    weight_type = weight_tensor.data_type
+    input_type = input_tensor.data.dtype
+    output_type = output_tensor.data.dtype
+    weight_type = weight_tensor.data.dtype
     assert input_type == output_type == weight_type, "tensor type not consistent"
     
     bias_idx = np.float64(-1)
