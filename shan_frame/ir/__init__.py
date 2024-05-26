@@ -15,6 +15,7 @@ class OperatorType(Enum):
 
 
 class Operator:
+    idx: int
     input_idx_list: list[np.float64]
     output_idx: np.float64
     op_type: OperatorType
@@ -104,6 +105,7 @@ class Model:
         output_tensor = self.tensors.get(op.output_idx)
         assert output_tensor is not None, f"output {int(op.output_idx)} of op {op_idx} does not exist"
         output_tensor.src_op = op_idx
+        op.idx = op_idx
 
     def trim_operator(self):
         op_idx_list = list(self.operators.keys())
@@ -120,7 +122,9 @@ class Model:
             tensor.dst_op = {op_new_idx_dict[idx] for idx in tensor.dst_op}
 
         for old_idx, new_idx in op_new_idx_dict.items():
-            self.operators[new_idx] = self.operators.pop(old_idx)
+            op = self.operators.pop(old_idx)
+            op.idx = new_idx
+            self.operators[new_idx] = op
 
     def __str__(self) -> str:
         result = ""

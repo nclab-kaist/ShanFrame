@@ -1,4 +1,4 @@
-from ..ir import DataLayout, Operator, OperatorType, Model
+from . import DataLayout, Operator, OperatorType, Model
 from numpy import float64
 
 
