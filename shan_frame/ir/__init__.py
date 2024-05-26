@@ -2,6 +2,7 @@ from enum import Enum
 import numpy as np
 from typing import Iterable
 
+
 class OperatorType(Enum):
     CONV_2D = 0
     DEPTH_CONV_2D = 1
@@ -24,10 +25,18 @@ class Operator:
         self.output_idx = output_idx
         self.op_type = op_type
 
+
 class DataLayout(Enum):
     UNKNOWN = 0
     HWC = 1
     CHW = 2
+
+    def __str__(self) -> str:
+        match self:
+            case DataLayout.UNKNOWN: return "UNKNOWN"
+            case DataLayout.HWC: return "HWC"
+            case DataLayout.CHW: return "CHW"
+            case _: raise NotImplementedError()
 
 
 class DataType(Enum):
@@ -40,6 +49,7 @@ class Quantization(Enum):
     NO_QUANTIZATION = 0
     PER_CHANNEL = 1
     PER_TENSOR = 2
+
 
 class Tensor:
     name: str
@@ -63,6 +73,7 @@ class Tensor:
     # pre-padding
     prepad_h: int = 0
     prepad_w: int = 0
+
     def __init__(self) -> None:
         self.dst_op = set()
 
@@ -98,21 +109,21 @@ class Model:
         op_idx_list = list(self.operators.keys())
         op_idx_list.sort()
         op_new_idx_dict = {}
-        
+
         for new_idx in range(0, len(op_idx_list)):
             old_idx = op_idx_list[new_idx]
             op_new_idx_dict[old_idx] = new_idx
-            
+
         for tensor in self.tensors.values():
             if tensor.src_op >= 0:
                 tensor.src_op = op_new_idx_dict[tensor.src_op]
             tensor.dst_op = {op_new_idx_dict[idx] for idx in tensor.dst_op}
-            
+
         for old_idx, new_idx in op_new_idx_dict.items():
             self.operators[new_idx] = self.operators.pop(old_idx)
-            
+
     def __str__(self) -> str:
         result = ""
         for idx, op in self.operators.items():
             result += f"{idx}: {op.op_type}\n"
-        return result 
+        return result
