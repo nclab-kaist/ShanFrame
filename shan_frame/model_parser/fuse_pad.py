@@ -28,11 +28,11 @@ def fuse_pad(model: Model):
             continue
 
         # fuse padding into (depthwise) conv2d
-        diff_h = input_tensor.dim_h - output_tensor.dim_h
-        assert diff_h % 2 == 0, "height difference not even"
+        diff_h = output_tensor.dim_h - input_tensor.dim_h
+        assert diff_h > 0 and diff_h % 2 == 0, "height difference not even"
         pad_h = diff_h // 2
-        diff_w = input_tensor.dim_w - output_tensor.dim_w
-        assert diff_w % 2 == 0, "weight difference not even"
+        diff_w = output_tensor.dim_w - input_tensor.dim_w
+        assert diff_w > 0 and diff_w % 2 == 0, "weight difference not even"
         pad_w = diff_w // 2
         
         for dst_op_idx in output_tensor.dst_op:
