@@ -78,6 +78,9 @@ class Tensor:
     def __init__(self) -> None:
         self.dst_op = set()
 
+    def mem_size(self) -> int:
+        return self.dim_n * (self.dim_h + self.prepad_h) * (self.dim_w + self.prepad_w) * self.dim_c * self.data.dtype.itemsize
+
 
 class Model:
     tensors: dict[np.float64, Tensor]

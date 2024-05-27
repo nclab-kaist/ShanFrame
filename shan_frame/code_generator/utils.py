@@ -1,4 +1,5 @@
-from ..ir import Operator, Model
+from numpy import ndarray, reshape, sum
+from ..ir import Operator, Model, Tensor
 from ..ir.operator import *
 
 
@@ -14,3 +15,43 @@ def indent_lines(input: str, indent: int) -> str:
     indent_str = "    "
     lines = [indent_str * indent + line.strip() + "\n" for line in input.split("\n")]
     return "".join(lines)
+
+def effective_scale(input_scales: ndarray, weight_scales: ndarray, output_scales: ndarray) -> ndarray:
+    return input_scales * weight_scales / output_scales
+
+def get_contribution(weight: Tensor, bias: ndarray, input_zero: int) -> ndarray:
+    weight_shaped = reshape(
+        weight.data, (weight.dim_n, weight.dim_h, weight.dim_w, weight.dim_c))
+    weight_sum = sum(weight_shaped, axis=(1, 2, 3))
+    return bias + weight_sum
+
+def scales_name(idx: int) -> str:
+    return f"scales{idx}"
+
+
+def scales_declare(idx: int) -> str:
+    return f"const float {scales_name(idx)}[]"
+
+
+def contrib_name(idx: int) -> str:
+    return f"contrib{idx}"
+
+
+def contrib_declare(idx: int) -> str:
+    return f"const int32_t {contrib_name(idx)}[]"
+
+
+def weight_name(idx: int) -> str:
+    return f"weight{idx}"
+
+
+def weight_declare(idx: int) -> str:
+    return f"const int8_t {weight_name(idx)}[]"
+
+
+def buffer_name() -> str:
+    return "buffer"
+
+
+def kernel_name(idx: int, op_type: str) -> str:
+    return f"layer{idx}_{op_type}"

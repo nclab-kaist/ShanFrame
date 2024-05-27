@@ -1,3 +1,4 @@
+from .output_code import VecMulFunc
 from .utils import indent_lines
 from ..ir import DataLayout
 
@@ -424,3 +425,69 @@ def c1o2_output(output_layout: DataLayout, indent: int) -> str:
                 f"unsupported data type: {output_layout}")
 
     return indent_lines(output_setup + requant_str + out_str, indent)
+
+
+def conv2d_1x1_setup(num_elements: int, output_layout: DataLayout, indent: int) -> str:
+    ch_offset = "1" if output_layout == DataLayout.HWC else "num_elements"
+    return indent_lines(f"""
+        const int num_elements = {num_elements};
+        const int8_t *input_elem;
+        const int ch_offset = {ch_offset}
+        int8_t *out = output;
+    """, indent)
+
+
+def conv2d_1x1_even_loop_low_to_high(
+    start: int, num: int, out_c: int, o2_vec_mul: VecMulFunc, weight: str, scales: str, contrib: str, out_offset: str, indent: int
+) -> str:
+
+    o2_vec_mul_call = o2_vec_mul.get_call(
+        "input_elem", "out", weight,
+        str(out_c), "ch_offset",
+        out_offset, scales, contrib
+    )
+    setup = indent_lines(f"""
+        input_elem = input + {start};
+        for (int i = {num}; i > 0; i -= 1) {{
+    """, indent)
+    indent += 1
+    loop_body = indent_lines(f"""
+        out = {o2_vec_mul_call};
+        input_elem += 2 * input_c;
+    """, indent)
+    indent -= 1
+    cleanup = indent_lines("}\n", indent)
+    return setup + loop_body + cleanup
+
+
+def conv2d_1x1_even_loop_high_to_low(
+    start: int, num: int, out_c: int, o2_vec_mul: VecMulFunc, weight: str, scales: str, contrib: str, out_offset: str, indent: int
+) -> str:
+    o2_vec_mul_call = o2_vec_mul.get_call(
+        "input_elem", "out", weight,
+        str(out_c), "ch_offset",
+        out_offset, scales, contrib
+    )
+    setup = indent_lines(f"""
+        input_elem = input + {start};
+        for (int i = {num}; i > 0; i -= 1) {{
+    """, indent)
+    indent += 1
+    loop_body = indent_lines(f"""
+        input_elem -= 2 * input_c;                     
+        out = {o2_vec_mul_call};
+    """, indent)
+    indent -= 1
+    cleanup = indent_lines("}\n", indent)
+    return setup + loop_body + cleanup
+
+
+def conv2d_1x1_odd_cleanup(out_c: int, o1_vec_mul: VecMulFunc, weight: str, scales: str, contrib: str, out_offset: str, indent: int) -> str:
+    o1_vec_mul_call = o1_vec_mul.get_call(
+        "input_elem", "out", weight,
+        str(out_c), "ch_offset",
+        out_offset, scales, contrib
+    )
+    return indent_lines(f"""
+        out = {o1_vec_mul_call};
+    """, indent)

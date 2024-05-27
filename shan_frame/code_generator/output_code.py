@@ -2,36 +2,18 @@ from numpy import ndarray
 from ..ir import DataLayout, Tensor
 
 class KernelFunc:
-    name: str
-    param: str
-    include: list[str]
+    include: str
+    definition: str
     const: list[tuple[str, ndarray]]
-    content: list[str]
-    current_indent: int
+    content: str
+    call: str
     
-    def __init__(self, name: str, param: str) -> None:
-        self.name = name
-        self.param = param
-        self.include = []
+    def __init__(self) -> None:
+        self.include = ""
+        self.definition = ""
         self.const = []
-        self.content = []
-        self.current_indent = 1
-    
-    def add_line(self, line: str) -> None:
-        indent_str = "    " * self.current_indent
-        self.content.append(indent_str + line)
-        
-    def add_include(self, header: str) -> None:
-        self.include.append(header)
-    
-    def add_const(self, name: str, data: ndarray) -> None:
-        self.const.append((name, data))
-        
-    def add_indent(self) -> None:
-        self.current_indent += 1
-        
-    def del_indent(self) -> None:
-        self.current_indent -= 1
+        self.content = ""
+
 
 class VecMulFunc:
     col_num: int
@@ -57,7 +39,7 @@ class VecMulFunc:
     
 class OutputCode:
     root_dir: str
-    kernels: dict[str, KernelFunc]
+    kernels: dict[int, KernelFunc]
     vec_mul: dict[tuple[int, int], VecMulFunc]
     const_tensors: list[Tensor]
     
