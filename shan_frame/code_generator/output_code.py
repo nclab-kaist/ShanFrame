@@ -37,12 +37,48 @@ class VecMulFunc:
     def get_def(self) -> str:
         ret = "void "
         name = self.get_name()
-        args = "const int8_t *input, int8_t *output, const int8_t *weight, const int row_count, const int ch_offset, const int out_offset, const float *scales, const int32_t *contrib"
+        args = ", ".join([
+            "const int8_t *input", "int8_t *output", "const int8_t *weight", 
+            "const int row_count", "const int ch_offset", "const int out_offset", 
+            "const float *scales", "const int32_t *contrib"
+        ])
         return f"{ret}{name}({args})"
     
-    def get_call(self, input: str, output: str, weight: str, row_count: str, ch_offset: str, output_offset: str, scales: str, contrib: str) -> str:
+    def get_call(self, 
+                 input: str, output: str, weight: str, 
+                 row_count: str, ch_offset: str, output_offset: str, 
+                 scales: str, contrib: str) -> str:
         return f"{self.get_name()}({input}, {output}, {weight}, {row_count}, {ch_offset}, {output_offset}, {scales}, {contrib})"
+
+
+class ChConvFunc:
+    kernel_size: int
+    stride: int
+
+    def __init__(self, kernel_size: int, stride: int) -> None:
+        self.kernel_size = kernel_size
+        self.stride = stride
+
+    def get_name(self) -> str:
+        return f"ch_conv_{self.kernel_size}x{self.kernel_size}_stride{self.stride}"
+
+    def get_def(self) -> str:
+        ret = "void "
+        name = self.get_name()
+        args = ", ".join([
+            "const int8_t *input", "int8_t *output", "const int8_t *ksrc",
+            "const float scale", "const int32_t bias", "const int8_t out_offset",
+            "const int row_size", "const int ch_offset", "const int out_x", "const int out_y"
+        ])
+        return f"{ret}{name}({args})"
     
+    def get_call(self,
+                 input: str, output: str, ksrc: str,
+                 scale: str, bias: str, out_offset: str,
+                 row_size: str, ch_offset: str, out_x: str, out_y: str) -> str:
+        return f"{self.get_name}({input}, {output}, {ksrc}, {scale}, {bias}, {out_offset}, {row_size}, {ch_offset}, {out_x}, {out_y})"
+
+
 class OutputCode:
     root_dir: str
     kernels: dict[int, KernelFunc]
