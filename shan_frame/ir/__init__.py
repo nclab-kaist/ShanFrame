@@ -79,7 +79,7 @@ class Tensor:
         self.dst_op = set()
 
     def mem_size(self) -> int:
-        return self.dim_n * (self.dim_h + self.prepad_h) * (self.dim_w + self.prepad_w) * self.dim_c * self.data.dtype.itemsize
+        return self.dim_n * (self.dim_h + 2 * self.prepad_h) * (self.dim_w + 2 * self.prepad_w) * self.dim_c * self.data.dtype.itemsize
 
 
 class Model:
