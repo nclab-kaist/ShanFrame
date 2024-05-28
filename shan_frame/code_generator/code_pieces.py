@@ -1,6 +1,6 @@
-from .output_code import VecMulFunc
-from .utils import indent_lines
-from ..ir import DataLayout
+from .output_code import OutputCode, VecMulFunc
+from .utils import *
+from ..ir import DataLayout, Tensor
 
 
 def c2o2_setup(col_size: int, output_layout: DataLayout, indent: int) -> str:
@@ -427,13 +427,50 @@ def c1o2_output(output_layout: DataLayout, indent: int) -> str:
     return indent_lines(output_setup + requant_str + out_str, indent)
 
 
-def conv2d_1x1_setup(num_elements: int, output_layout: DataLayout, indent: int) -> str:
-    ch_offset = "1" if output_layout == DataLayout.HWC else "num_elements"
+def conv2d_setup(
+    idx: int,
+    input: Tensor,
+    output: Tensor,
+    indent: int
+) -> str:
+    match output.layout:
+        case DataLayout.HWC:
+            ch_offset = 1
+            out_update = output.dim_c
+        case DataLayout.CHW:
+            ch_offset = output.mem_size() // output.dim_c
+            out_update = 1
+        case _: raise RuntimeError(f"unsupported data layout: {output.layout}")
     return indent_lines(f"""
-        const int num_elements = {num_elements};
+        const int out_c = {output.dim_c};
+        const int ch_offset = {ch_offset};
+        const int out_update = {out_update};
+        const int8_t input_zero_pointt = {input.zero_point[0]};
+        const int8_t out_offset = {output.zero_point[0]};
+        const int8_t *weight = {weight_name(idx)};
+        const float *scales = {scales_name(idx)};
+        const int32_t *contrib = {contrib_name(idx)};
+        int8_t *pad_pos = output;
         const int8_t *input_elem;
+        int8_t *out;
+    """, indent)
+
+
+def pad_output(offset: int, size: int, indent) -> str:
+    if size == 0:
+        return ""
+    return indent_lines(f"memset(&output[{offset}], out_offset, {size});\n", indent)
+
+
+def conv2d_1x1_setup(out_c: int, output_layout: DataLayout, indent: int) -> str:
+    ch_offset = "1" if output_layout == DataLayout.HWC else "num_elements"
+    out_update = out_c if output_layout == DataLayout.HWC else 1
+    return indent_lines(f"""
         const int ch_offset = {ch_offset}
-        int8_t *out = output;
+        const int out_update = {out_update};
+        const int out_offset = 
+        const int8_t *input_elem;
+        int8_t *out;
     """, indent)
 
 
@@ -452,7 +489,8 @@ def conv2d_1x1_even_loop_low_to_high(
     """, indent)
     indent += 1
     loop_body = indent_lines(f"""
-        out = {o2_vec_mul_call};
+        {o2_vec_mul_call};
+        out += 2 * out_update;
         input_elem += 2 * input_c;
     """, indent)
     indent -= 1
@@ -470,12 +508,14 @@ def conv2d_1x1_even_loop_high_to_low(
     )
     setup = indent_lines(f"""
         input_elem = input + {start};
+        out = output + {start} / input_c * {out_c};
         for (int i = {num}; i > 0; i -= 1) {{
     """, indent)
     indent += 1
     loop_body = indent_lines(f"""
-        input_elem -= 2 * input_c;                     
-        out = {o2_vec_mul_call};
+        input_elem -= 2 * input_c;
+        out -= 2 * out_update;
+        {o2_vec_mul_call};
     """, indent)
     indent -= 1
     cleanup = indent_lines("}\n", indent)
@@ -489,5 +529,256 @@ def conv2d_1x1_odd_cleanup(out_c: int, o1_vec_mul: VecMulFunc, weight: str, scal
         out_offset, scales, contrib
     )
     return indent_lines(f"""
-        out = {o1_vec_mul_call};
+        {o1_vec_mul_call};
     """, indent)
+
+
+def conv2d_prepad(output: Tensor, indent: int) -> str:
+    content = ""
+    # set prepad
+    if output.layout == DataLayout.HWC:
+        pad_row_size = output.prepad_h * \
+            (output.dim_w + 2 * output.prepad_w) * output.dim_c
+        if output.prepad_h != 0:
+            # prepad row
+            content += indent_lines(
+                f"memset(&output[0], out_offset, {pad_row_size});\n", indent)
+            content += indent_lines(
+                f"memset(&output[{output.mem_size() - pad_row_size}], out_offset, {pad_row_size});\n", indent)
+        if output.prepad_w != 0:
+            # prepad column
+            content += indent_lines(
+                f"pad_pos = &output[{pad_row_size}];\n", indent)
+            content += indent_lines(f"""for(int i = 0; i < {output.dim_h}; i++){{
+                memset(pad_pos, out_offset, {output.prepad_w * output.dim_c});
+                memset(pad_pos + {(output.prepad_w + output.dim_w) * output.dim_c}, out_offset, {output.prepad_w * output.dim_c});
+                pad_pos += {(output.dim_w + 2 * output.prepad_w) * output.dim_c};
+            }}""", indent)
+    elif output.layout == DataLayout.CHW:
+        pad_row_size = (output.prepad_h * (output.dim_w + 2 * output.prepad_w))
+        if output.prepad_h != 0:
+            pad_shift = output.dim_h * \
+                (output.dim_w + 2 * output.prepad_w) + 2 * output.prepad_w
+            content += indent_lines(f"""
+            pad_pos = output;
+            for(int i = 0; i < {output.dim_c}; i++) {{
+                memset(pad_pos, out_offset, {pad_row_size});
+                memset(pad_pos + {(output.dim_h + output.prepad_h) * (output.dim_w + 2 * output.prepad_w)}, out_offset, {pad_row_size});
+                pad_pos += {(output.dim_w + 2 * output.prepad_w) * (output.dim_h + 2 * output.prepad_h)};
+            }}
+            """, indent)
+        if output.prepad_w != 0:
+            content += indent_lines(f"""
+                pad_pos = output + {pad_row_size};
+                for (int i = 0; i < {output.dim_c}; i++){{
+                    for (int j = 0; j < {output.dim_h}; j++) {{
+                        memset(pad_pos, out_offset, {output.prepad_w});
+                        memset(pad_pos + {output.dim_w + output.prepad_w}, out_offset, {output.prepad_w});
+                        pad_pos += {output.dim_w + 2 * output.prepad_w};
+                    }}
+                    pad_pos += {(output.dim_w + 2 * output.prepad_w) * 2 * output.prepad_h};
+                }}
+            """, indent)
+    return content
+
+
+def conv2d_1x1_by_row(input: Tensor, output: Tensor, output_code: OutputCode, indent) -> str:
+    content = ""
+    out_start = output.prepad_h * \
+        (output.dim_w + 2 * output.prepad_w) + output.prepad_w
+    if output.layout == DataLayout.HWC:
+        out_start *= output.dim_c
+    o2_vec_mul = output_code.add_vec_mul(2, input.dim_c, output.layout)
+    o2_call = o2_vec_mul.get_call(
+        "input_elem", "out", "weight",
+        str(output.dim_c), "ch_offset", "out_offset", "scales", "contrib"
+    )
+    o1_cleanup = ""
+    if output.dim_w % 2 != 0:
+        o1_vec_mul = output_code.add_vec_mul(1, input.dim_c, output.layout)
+        o1_call = o1_vec_mul.get_call(
+            "input_elem", "out", "weight",
+            str(output.dim_c), "ch_offset", "out_offset", "scales", "contrib"
+        )
+        o1_cleanup = indent_lines(f"""
+            {o1_call};
+            out += out_update;
+            input_elem += {input.dim_c};
+        """, indent)
+    content += indent_lines(f"""
+        out = output + {out_start}
+        input_elem = input
+        for(int out_h = 0; out_h < {output.dim_h}; out_h++){{
+            for(int out_w = 0; out_w < {output.dim_w} / 2; out_w++){{
+                {o2_call};
+                out += 2 * out_update;
+                input_elem += 2 * {input.dim_c};
+            }}
+            {o1_cleanup}
+        }}
+    """, indent)
+    return content
+
+
+def conv2d_1x1_low_to_high(input_start: int, output_start: int, num: int,
+                           input: Tensor, output: Tensor, output_code: OutputCode, indent) -> str:
+    content = ""
+    if num == 0:
+        return content
+    pad_head = output.prepad_h * output.dim_w
+    if output.layout == DataLayout.HWC:
+        pad_head *= output.dim_c
+    o2_vec_mul = output_code.add_vec_mul(2, input.dim_c, output.layout)
+    o2_call = o2_vec_mul.get_call(
+        "input_elem", "out", "weight",
+        str(output.dim_c), "ch_offset", "out_offset", "scales", "contrib"
+    )
+    o1_cleanup = ""
+    if num % 2 != 0:
+        o1_vec_mul = output_code.add_vec_mul(1, input.dim_c, output.layout)
+        o1_call = o1_vec_mul.get_call(
+            "input_elem", "out", "weight",
+            str(output.dim_c), "ch_offset", "out_offset", "scales", "contrib"
+        )
+        o1_cleanup = indent_lines(f"""
+            {o1_call};
+            out += out_update;
+            input_elem += {input.dim_c};
+        """, indent)
+    content += indent_lines(f"""
+        out = output + {pad_head + output_start};
+        input_elem = input + {input_start};
+        for(int i = 0; i < {num} / 2; i++){{
+            {o2_call};
+            out += 2 * out_update;
+            input_elem += 2 * {input.dim_c};            
+        }}
+        {o1_cleanup}
+    """, indent)
+    return content
+
+
+def conv2d_1x1_high_to_low(input_start: int, output_start: int, num: int,
+                           input: Tensor, output: Tensor, output_code: OutputCode, indent) -> str:
+    content = ""
+    if num == 0:
+        return content
+    pad_head = output.prepad_h * output.dim_w
+    if output.layout == DataLayout.HWC:
+        pad_head *= output.dim_c
+    o2_vec_mul = output_code.add_vec_mul(2, input.dim_c, output.layout)
+    o2_call = o2_vec_mul.get_call(
+        "input_elem", "out", "weight",
+        str(output.dim_c), "ch_offset", "out_offset", "scales", "contrib"
+    )
+    o1_cleanup = ""
+    if num % 2 != 0:
+        o1_vec_mul = output_code.add_vec_mul(1, input.dim_c, output.layout)
+        o1_call = o1_vec_mul.get_call(
+            "input_elem", "out", "weight",
+            str(output.dim_c), "ch_offset", "out_offset", "scales", "contrib"
+        )
+        o1_cleanup = indent_lines(f"""
+            out -= out_update;
+            input_elem -= {input.dim_c};            
+            {o1_call};
+        """, indent)
+    content += indent_lines(f"""
+        out = output + {pad_head + output_start};
+        input_elem = input + {input_start};
+        for(int i = 0; i < {num} / 2; i++){{
+            out -= 2 * out_update;
+            input_elem -= 2 * {input.dim_c}; 
+            {o2_call}; 
+        }}
+        {o1_cleanup}
+    """, indent)
+    return content
+
+
+def conv2d_1x1_all(input: Tensor, output: Tensor, output_code: OutputCode, indent) -> str:
+    assert output.prepad_w == 0
+    return conv2d_1x1_low_to_high(0, 0, output.dim_h * output.dim_w, input, output, output_code, indent)
+
+
+def conv2d_window_slide(op: Conv2D, input: Tensor, weight: Tensor, output: Tensor, output_code: OutputCode, indent) -> str:
+    content = ""
+    o2_vec_mul = output_code.add_vec_mul(
+        2, weight.dim_h * weight.dim_w * input.dim_c, output.layout)
+    o2_call = o2_vec_mul.get_call(
+        "buffer", "out", "weight",
+        str(output.dim_c), "ch_offset", "out_offset", "scales", "contrib"
+    )
+    o1_block = ""
+    if output.dim_w % 2 != 0:
+        o1_vec_mul = output_code.add_vec_mul(
+            2, weight.dim_h * weight.dim_w * input.dim_c, output.layout)
+        o1_call = o1_vec_mul.get_call(
+            "buffer", "out", "weight",
+            str(output.dim_c), "ch_offset", "out_offset", "scales", "contrib"
+        )
+        o1_block = indent_lines(f"""
+            {o1_call};
+            col_buf = buffer;
+            out += out_update;
+        """, indent)
+    output_start = output.prepad_h * \
+        (2 * output.prepad_w + output.dim_w) + output.prepad_w
+    if output.layout == DataLayout.HWC:
+        output_start *= output.dim_c
+    content += indent_lines(f"""
+        out = output + {output_start};
+        const int in_window_x_start = -{op.pad_w};
+        int in_window_y = -{op.pad_h};
+        int8_t *col_buf = buffer;
+        int8_t *window_row_buf = col_buf;
+        for(int oy = 0; oy < {output.dim_h}; oy++){{
+            int in_window_x = in_window_x_start;
+            for(int ox = 0; ox < {output.dim_w}; ox++){{
+    """, indent)
+    indent += 2
+    content += indent_lines(f"""
+                int8_t *window_row_buf = col_buf;
+                int cp_y = 0;
+                if(in_window_y < 0) {{
+                    int pad_row = MIN(-in_window_y, {weight.dim_h});
+                    memset(window_row_buf, input_zero_pointt, {weight.dim_w * weight.dim_c} * pad_row);
+                    window_row_buf += {weight.dim_w * weight.dim_c} * pad_row;
+                    cp_y += pad_row;
+                }}
+                int pad_head = MIN(MAX(-in_window_x, 0), {weight.dim_w});
+                int pad_tail = MAX(in_window_x + {weight.dim_w} - {input.dim_w}, 0);
+                int copy_size = MAX({weight.dim_w} - pad_head - pad_tail, 0);
+                for(; cp_y < {weight.dim_h}; cp_y++){{
+                    memset(window_row_buf, input_zero_pointt, pad_head * {input.dim_c});
+                    window_row_buf += pad_head * {input.dim_c};
+                    const int8_t *in_cp = input + (in_window_y + cp_y) * {input.dim_c * input.dim_w} + (in_window_x + pad_head) * {input.dim_c};
+                    memcpy(window_row_buf, in_cp, copy_size * {input.dim_c});
+                    window_row_buf += copy_size * {input.dim_c};
+                    memset(window_row_buf, input_zero_pointt, pad_tail * {input.dim_c});
+                    window_row_buf += pad_tail * {input.dim_c};
+                }}
+                col_buf += {weight.dim_h * weight.dim_w * weight.dim_c};
+                in_window_x += {op.stride_w};
+
+                if(col_buf == buffer + {2 * weight.dim_h * weight.dim_w * input.dim_c}){{
+                    {o2_call};
+                    col_buf = buffer;
+                    out += 2 * out_update;
+                }}
+    """, indent)
+    indent -= 1
+    out_row_update = 2 * output.prepad_w
+    if output.layout == DataLayout.HWC:
+        out_row_update *= output.dim_c
+    content += indent_lines(f"""
+            }}
+            {o1_block}
+            out += {out_row_update};
+            in_window_y += {op.stride_h};
+    """, indent)
+    indent -= 1
+    content += indent_lines(f"""
+        }}
+    """, indent)
+    return content

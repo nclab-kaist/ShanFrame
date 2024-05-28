@@ -13,7 +13,13 @@ class KernelFunc:
         self.definition = ""
         self.const = []
         self.content = ""
-
+        
+    def print_def(self) -> str:
+        ret = self.definition
+        ret += "{\n"
+        ret += self.content
+        ret += "}\n"
+        return ret
 
 class VecMulFunc:
     col_num: int
@@ -29,7 +35,7 @@ class VecMulFunc:
         return f"vec_mul_1x{self.col_size}_{self.col_num}_{self.output_layout}"
     
     def get_def(self) -> str:
-        ret = "int8_t *"
+        ret = "void "
         name = self.get_name()
         args = "const int8_t *input, int8_t *output, const int8_t *weight, const int row_count, const int ch_offset, const int out_offset, const float *scales, const int32_t *contrib"
         return f"{ret}{name}({args})"

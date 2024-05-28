@@ -55,13 +55,7 @@ def generate_o2_vec_mul_def(func: VecMulFunc) -> str:
     c1o2_block_body += c1o2_output(func.output_layout, indent)
     indent -= 1
     c1o2_block_end = indent_lines("}", indent)
-    # build ret
-    ret = ""
-    match func.output_layout:
-        case DataLayout.HWC: ret = indent_lines("return output + 2 * row_count;", indent)
-        case DataLayout.CHW: ret = indent_lines("return output + 2;", indent)
-        case _: raise NotImplementedError()
-    return setup + c2o2_loop_start + c2o2_loop_body + c2o2_loop_end + c1o2_block_start + c1o2_block_body + c1o2_block_end + ret
+    return setup + c2o2_loop_start + c2o2_loop_body + c2o2_loop_end + c1o2_block_start + c1o2_block_body + c1o2_block_end
 
 
 def generate_o1_vec_mul_def(func: VecMulFunc) -> str:
