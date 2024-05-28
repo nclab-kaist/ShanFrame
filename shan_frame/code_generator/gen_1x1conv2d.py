@@ -13,7 +13,7 @@ from .utils import (
     contrib_name,
     weight_name,
 )
-from .code_pieces import *
+from .conv2d_code_pieces import *
 
 
 class VecMulParam:

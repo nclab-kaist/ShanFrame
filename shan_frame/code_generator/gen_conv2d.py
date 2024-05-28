@@ -5,7 +5,7 @@ from ..ir.operator import Conv2D
 from ..ir import Tensor, Model
 from .output_code import OutputCode, KernelFunc
 from .gen_1x1conv2d import generate_1x1conv2d
-from .code_pieces import *
+from .conv2d_code_pieces import *
 
 
 def gen_content(model: Model, op: Conv2D, output_code: OutputCode) -> str:
