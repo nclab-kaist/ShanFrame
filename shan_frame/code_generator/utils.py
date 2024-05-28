@@ -19,11 +19,21 @@ def indent_lines(input: str, indent: int) -> str:
 def effective_scale(input_scales: ndarray, weight_scales: ndarray, output_scales: ndarray) -> ndarray:
     return input_scales * weight_scales / output_scales
 
-def get_contribution(weight: Tensor, bias: Tensor, input_zero: int) -> ndarray:
+
+def get_conv2d_contribution(weight: Tensor, bias: Tensor, input_zero: int) -> ndarray:
     weight_shaped = reshape(
         weight.data, (weight.dim_n, weight.dim_h, weight.dim_w, weight.dim_c))
     weight_sum = sum(weight_shaped, axis=(1, 2, 3))
-    return bias.data + weight_sum
+    return bias.data + weight_sum * -input_zero
+
+
+def get_depthwise_conv2d_contribution(weight: Tensor, bias: Tensor, input_zero: int) -> ndarray:
+    weight_shaped = reshape(
+        weight.data, (weight.dim_n, weight.dim_h, weight.dim_w, weight.dim_c))
+    weight_sum = sum(weight_shaped, axis=(0, 1, 2))
+    print(weight_sum)
+    print(f"input_zero = {input_zero}")
+    return bias.data + weight_sum * -input_zero
 
 def scales_name(idx: int) -> str:
     return f"scales{idx}"
