@@ -52,9 +52,9 @@ def generate_depthwise_conv2d(model: Model, op: DepthConv2D, output_code: Output
     func.definition = f"void {func_name}(const int8_t *input, int8_t *output, int8_t *buffer)"
     func.content = generate_content(model, op, output_code)
     func.const = [
-        (weight_name(op.idx), weight.data),
-        (contrib_name(op.idx), contribution),
-        (scales_name(op.idx), scales)
+        (f"const int8_t {weight_name(op.idx)}[]", weight.data),
+        (f"const int32_t {contrib_name(op.idx)}[]", contribution),
+        (f"const float {scales_name(op.idx)}[]", scales)
     ]
 
     

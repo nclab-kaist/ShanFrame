@@ -229,9 +229,9 @@ def generate_1x1conv2d(op: Conv2D, model: Model, output_code: OutputCode) -> Non
     func = KernelFunc()
     func.content = content
     func.const = [
-        (weight_name(op.idx), weight.data),
-        (contrib_name(op.idx), contribution),
-        (scales_name(op.idx), scales)
+        (f"const int8_t {weight_name(op.idx)}[]", weight.data),
+        (f"const int32_t {contrib_name(op.idx)}[]", contribution),
+        (f"const float {scales_name(op.idx)}[]", scales)
     ]
     func_name = kernel_name(op.idx, "conv2d_1x1")
     input_addr = f"&{buffer_name()}[{input.addr}]"

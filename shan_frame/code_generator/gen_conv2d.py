@@ -40,9 +40,9 @@ def generate_conv2d(model: Model, op: Conv2D, output_code: OutputCode):
     func = KernelFunc()
     func.content = gen_content(model, op, output_code)
     func.const = [
-        (weight_name(op.idx), weight.data),
-        (contrib_name(op.idx), contribution),
-        (scales_name(op.idx), scales)
+        (f"const int8_t {weight_name(op.idx)}[]", weight.data),
+        (f"const int32_t {contrib_name(op.idx)}[]", contribution),
+        (f"const float {scales_name(op.idx)}[]", scales)
     ]
     func_name = kernel_name(op.idx, "conv2d")
     input_addr = f"&{buffer_name()}[{input.addr}]"
