@@ -215,7 +215,7 @@ def depconv_loop_body(input: Tensor, weight: Tensor, op: DepthConv2D, output_cod
         input_str = "buffer"
     assert weight.dim_h == weight.dim_w
     assert op.stride_h == op.stride_w
-    ch_conv =  output_code.add_ch_conv(weight.dim_h, op.stride_h)
+    ch_conv =  output_code.add_ch_conv(weight.dim_h, op.stride_h, False)
     ch_conv_call = ch_conv.get_call(
         input_str, "out", "weight", 
         "*(scales++)", "*(contrib++)", "out_offset", 

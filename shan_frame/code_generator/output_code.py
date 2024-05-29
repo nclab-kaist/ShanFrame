@@ -54,13 +54,18 @@ class VecMulFunc:
 class ChConvFunc:
     kernel_size: int
     stride: int
+    rev: bool
 
-    def __init__(self, kernel_size: int, stride: int) -> None:
+    def __init__(self, kernel_size: int, stride: int, rev: bool) -> None:
         self.kernel_size = kernel_size
         self.stride = stride
+        self.rev = rev
 
     def get_name(self) -> str:
-        return f"ch_conv_{self.kernel_size}x{self.kernel_size}_stride{self.stride}"
+        name = f"ch_conv_{self.kernel_size}x{self.kernel_size}_stride{self.stride}"
+        if self.rev:
+            name += "_rev"
+        return name
 
     def get_def(self) -> str:
         ret = "void "
@@ -83,7 +88,7 @@ class OutputCode:
     root_dir: str
     kernels: dict[int, KernelFunc]
     vec_mul: dict[tuple[int, int], VecMulFunc]
-    ch_conv: dict[tuple[int, int], ChConvFunc]
+    ch_conv: dict[tuple[int, int, bool], ChConvFunc]
     const_tensors: list[Tensor]
     
     def __init__(self, root_dir: str) -> None:
@@ -101,9 +106,9 @@ class OutputCode:
             col_num, col_size, output_layout)
         return vec_mul
     
-    def add_ch_conv(self, kernel_size: int, stride: int) -> ChConvFunc:
-        ch_conv = self.ch_conv.get((kernel_size, stride))
+    def add_ch_conv(self, kernel_size: int, stride: int, rev: bool) -> ChConvFunc:
+        ch_conv = self.ch_conv.get((kernel_size, stride, rev))
         if ch_conv is not None:
             return ch_conv
-        ch_conv = self.ch_conv[(kernel_size, stride)] = ChConvFunc(kernel_size, stride)
+        ch_conv = self.ch_conv[(kernel_size, stride, rev)] = ChConvFunc(kernel_size, stride, rev)
         return ch_conv
