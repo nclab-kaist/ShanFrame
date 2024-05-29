@@ -1,6 +1,6 @@
 import numpy as np
 
-from .utils import effective_scale, get_contribution
+from .utils import effective_scale, get_conv2d_contribution
 from ..ir.operator import Conv2D
 from ..ir import Tensor, Model
 from .output_code import OutputCode, KernelFunc
@@ -35,7 +35,7 @@ def generate_conv2d(model: Model, op: Conv2D, output_code: OutputCode):
     weight = model.tensors[op.weight_idx]
     output = model.tensors[op.output_idx]
     scales = effective_scale(input.scales, weight.scales, output.scales)
-    contribution = get_contribution(weight, bias, input.zero_point[0])
+    contribution = get_conv2d_contribution(weight, bias, input.zero_point[0])
     
     func = KernelFunc()
     func.content = gen_content(model, op, output_code)

@@ -6,7 +6,7 @@ from .output_code import KernelFunc, OutputCode, VecMulFunc
 from .utils import (
     buffer_name,
     effective_scale,
-    get_contribution,
+    get_conv2d_contribution,
     indent_lines,
     kernel_name,
     scales_name,
@@ -203,10 +203,10 @@ def generate_1x1conv2d(op: Conv2D, model: Model, output_code: OutputCode) -> Non
     output = model.tensors[op.output_idx]
     weight = model.tensors[op.weight_idx]
     bias = model.tensors[op.bias_idx]
-    contribution = get_contribution(weight, bias, input.zero_point[0])
+    contribution = get_conv2d_contribution(weight, bias, input.zero_point[0])
     scales = effective_scale(input.scales, weight.scales, output.scales)
     
-    assert op.stride_h == op.stride_w == 0
+    assert op.stride_h == op.stride_w == 1
     
     input_floor = input.addr
     input_ceiling = input.addr + input.mem_size()

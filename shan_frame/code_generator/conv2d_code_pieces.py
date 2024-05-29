@@ -445,7 +445,7 @@ def conv2d_setup(
         const int out_c = {output.dim_c};
         const int ch_offset = {ch_offset};
         const int out_update = {out_update};
-        const int8_t input_zero_pointt = {input.zero_point[0]};
+        const int8_t input_zero_point = {input.zero_point[0]};
         const int8_t out_offset = {output.zero_point[0]};
         const int8_t *weight = {weight_name(idx)};
         const float *scales = {scales_name(idx)};

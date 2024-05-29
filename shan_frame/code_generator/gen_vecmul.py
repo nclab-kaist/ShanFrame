@@ -73,8 +73,8 @@ def generate_vec_mul_def(func: VecMulFunc) -> str:
                 f"Not supported column num for vec mul: {func.col_num}")
 
 
-# def test():
-#     test_vec_mul = VecMulFunc(2, 27, DataLayout.CHW)
-#     print(f"{test_vec_mul.get_def()}{{")
-#     print(generate_vec_mul_def(test_vec_mul))
-#     print("}")
+def test():
+    test_vec_mul = VecMulFunc(2, 27, DataLayout.CHW)
+    print(f"{test_vec_mul.get_def()}{{")
+    print(generate_vec_mul_def(test_vec_mul))
+    print("}")

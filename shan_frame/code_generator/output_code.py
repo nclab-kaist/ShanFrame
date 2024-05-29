@@ -67,28 +67,30 @@ class ChConvFunc:
         name = self.get_name()
         args = ", ".join([
             "const int8_t *input", "int8_t *output", "const int8_t *ksrc",
-            "const float scale", "const int32_t bias", "const int8_t out_offset",
-            "const int row_size", "const int ch_offset", "const int out_x", "const int out_y"
+            "const float scale", "const int32_t contrib", "const int8_t out_offset",
+            "const int row_size", "const int ch_offset", "const int out_w", "const int out_h"
         ])
         return f"{ret}{name}({args})"
     
     def get_call(self,
                  input: str, output: str, ksrc: str,
-                 scale: str, bias: str, out_offset: str,
-                 row_size: str, ch_offset: str, out_x: str, out_y: str) -> str:
-        return f"{self.get_name}({input}, {output}, {ksrc}, {scale}, {bias}, {out_offset}, {row_size}, {ch_offset}, {out_x}, {out_y})"
+                 scale: str, contrib: str, out_offset: str,
+                 row_size: str, ch_offset: str, out_w: str, out_h: str) -> str:
+        return f"{self.get_name()}({input}, {output}, {ksrc}, {scale}, {contrib}, {out_offset}, {row_size}, {ch_offset}, {out_w}, {out_h})"
 
 
 class OutputCode:
     root_dir: str
     kernels: dict[int, KernelFunc]
     vec_mul: dict[tuple[int, int], VecMulFunc]
+    ch_conv: dict[tuple[int, int], ChConvFunc]
     const_tensors: list[Tensor]
     
     def __init__(self, root_dir: str) -> None:
         self.root_dir = root_dir
         self.kernels = {}
         self.vec_mul = {}
+        self.ch_conv = {}
         self.const_tensors = []
     
     def add_vec_mul(self, col_num: int, col_size: int, output_layout: DataLayout) -> VecMulFunc:
@@ -99,3 +101,9 @@ class OutputCode:
             col_num, col_size, output_layout)
         return vec_mul
     
+    def add_ch_conv(self, kernel_size: int, stride: int) -> ChConvFunc:
+        ch_conv = self.ch_conv.get((kernel_size, stride))
+        if ch_conv is not None:
+            return ch_conv
+        ch_conv = self.ch_conv[(kernel_size, stride)] = ChConvFunc(kernel_size, stride)
+        return ch_conv
