@@ -63,8 +63,8 @@ class DepthConv2D(Operator):
 
     def min_buffer_size(self, model: Model) -> int:
         input_tensor = model.tensors[self.input_idx]
-        buffer_h = input_tensor.dim_h + input_tensor.prepad_h + self.pad_h
-        buffer_w = input_tensor.dim_w + input_tensor.prepad_w + self.pad_w
+        buffer_h = input_tensor.dim_h + 2 * input_tensor.prepad_h + 2 * self.pad_h
+        buffer_w = input_tensor.dim_w + 2 * input_tensor.prepad_w + 2 * self.pad_w
         channel_size = buffer_h * buffer_w
         # if padding is fused, nothing we can do
         if self.pad_h != 0 or self.pad_w != 0:
