@@ -229,7 +229,7 @@ def get_rect(model: IRModel) -> list[Rect]:
         op = model.operators[op_idx]
         tensor_idx = op.output_idx
         tensor = model.tensors[tensor_idx]
-        tensor_size = tensor.dim_n * (tensor.dim_h + tensor.prepad_h) * (tensor.dim_w + tensor.prepad_w) * tensor.dim_c
+        tensor_size = tensor.mem_size()
         # determine lifetime
         tensor_lifetime = 1
         for dst_op_idx in tensor.dst_op:
