@@ -267,3 +267,6 @@ $RECYCLE.BIN/
 
 # generated memory footprint figure
 *.png
+
+# example output dir
+out
