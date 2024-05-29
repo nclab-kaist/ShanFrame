@@ -3,7 +3,7 @@ import matplotlib
 
 from ..ir.operator import Conv2D, DepthConv2D
 from ..ir import Model
-from ..utils import Rect, get_buf_rect, get_rect
+from ..utils import Rect, get_align_groups, get_buf_rect, get_rect
 
 
 # block: (start, end)
@@ -76,16 +76,42 @@ class MemoryScheduler:
 
     def schedule(self, model: Model) -> int:
         rect_list = get_rect(model)
-        rect_list.sort(key=lambda rect: (rect.width, rect.height), reverse=True)
+        rect_list.sort(key=lambda rect: rect.width * rect.height, reverse=True)
         footprint = MemoryFootprint(len(model.operators))
+        align_groups = get_align_groups(model)
         # fit op activations
         for rect in rect_list:
             # TODO: Add cache feature for optimization
             total_slots = self.find_slots(rect, footprint)
+            
+            # check if there is alignment requirement
+            align_group_idx = -1
+            for idx, align_group in enumerate(align_groups):
+                if rect.idx in align_group[0]:
+                    align_base = align_group[2]
+                    align_step = align_group[1]
+                    align_group_idx = idx
+                    if align_base >= 0:
+                        # there is an alignment base, pad all slots
+                        for slot_idx, slot in enumerate(total_slots):
+                            base_diff = abs(slot[0] - align_base)
+                            pad_size = align_step - base_diff % align_step
+                            pad_size = 0 if pad_size == align_step else pad_size
+                            total_slots[slot_idx] = (slot[0] + pad_size, slot[1])
+                        # remove slots smaller than rect after alignment
+                        total_slots = list(
+                            filter(lambda slot: slot[1]-slot[0] >= rect.height, total_slots))
             total_slots.sort(key=lambda slot: slot[1]-slot[0])
             rect.addr = int(total_slots[0][0])
             self.place_rect(rect, footprint)
             model.tensors[rect.idx].addr = rect.addr
+            if align_group_idx >= 0 and align_groups[align_group_idx][2] < 0:
+                # need to update align base of the align group
+                align_group = align_groups[align_group_idx]
+                align_step = align_group[1]
+                align_rects = align_group[0]
+                align_groups[align_group_idx] = (align_rects, align_step, rect.addr)
+                
         # find peak memory usage
         peak_mem = int(max(column[-1][1] if len(column) > 0
                        else 0 for column in footprint.columns))

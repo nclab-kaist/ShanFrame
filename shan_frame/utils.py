@@ -5,7 +5,7 @@ from tflite import Model as TFliteModel
 from tflite import Operator as TFliteOP
 from tflite import TensorType, BuiltinOperator
 
-from .ir import Quantization, Tensor as IRTensor, Model as IRModel, OperatorType
+from .ir import DataLayout, Quantization, Tensor as IRTensor, Model as IRModel, OperatorType
 from .ir.operator import Conv2D, DepthConv2D
 
 class TFLiteTensorWrpper:
@@ -243,6 +243,28 @@ def get_rect(model: IRModel) -> list[Rect]:
                     tensor_lifetime, op_idx, tensor.addr)
         rect_list.append(rect)
     return rect_list
+
+
+def get_align_groups(model: IRModel) -> list[tuple[set[np.float64], int, int]]:
+    align_groups: list[tuple[set[np.float64], int, int]] = []
+    for op in model.operators.values():
+        if not isinstance(op, DepthConv2D):
+            continue
+        if not op.io_overlap:
+            continue
+        input = model.tensors[op.input_idx]
+        output = model.tensors[op.output_idx]
+        if not input.layout == output.layout == DataLayout.HWC:
+            continue
+        input_in_group = False
+        for group in align_groups:
+            if op.input_idx in group:
+                input_in_group = True
+                group[0].add(op.output_idx)
+                break
+        if not input_in_group:
+            align_groups.append(({op.input_idx, op.output_idx}, input.dim_c, -1))
+    return align_groups
 
 
 def get_buf_rect(model: IRModel) -> list[Rect]:
