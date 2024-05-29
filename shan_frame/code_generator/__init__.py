@@ -2,7 +2,8 @@ from .output_code import OutputCode
 from .gen_conv2d import generate_conv2d
 from .gen_dep_conv2d import generate_depthwise_conv2d
 from .gen_add import generate_add
-from ..ir.operator import Conv2D, DepthConv2D, Add
+from .gen_avgpool import generate_avgpool
+from ..ir.operator import Conv2D, DepthConv2D, Add, AvgPool2D
 from ..ir import Model
 from .gen_ch_conv import test
 
@@ -21,6 +22,8 @@ class CodeGenerator:
                     generate_depthwise_conv2d(model, op, output_code)
                 case Add():
                     generate_add(model, op, output_code)
+                case AvgPool2D():
+                    generate_avgpool(model, op, output_code)
                 case _:
                     raise NotImplementedError(op.op_type)
         raise NotImplementedError("CodeGenerator.generate()")
