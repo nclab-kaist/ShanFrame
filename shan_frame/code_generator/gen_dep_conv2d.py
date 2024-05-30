@@ -56,5 +56,7 @@ def generate_depthwise_conv2d(model: Model, op: DepthConv2D, output_code: Output
         (f"const int32_t {contrib_name(op.idx)}[]", contribution),
         (f"const float {scales_name(op.idx)}[]", scales)
     ]
+    
+    output_code.kernels[op.idx] = func
 
     
