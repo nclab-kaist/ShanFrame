@@ -21,9 +21,10 @@ def c2o2_setup(col_size: int, output_layout: DataLayout, indent: int) -> str:
 
 def mac_setup(c: int, o: int, col_size: int, indent: int) -> str:
     content = ""
+    for j in range(0, o):
+        content += indent_lines(f"const int8_t *ip_b{j} = input + {j} * {col_size};", indent)
     for i in range(0, c):
         content += indent_lines(f"""
-            const int8_t *ip_b{i} = input + {i} * {col_size};
             const int32_t contrib_{i} = *(contrib_p++);
             const float scale_{i} = *(scales_p++);""", indent)
         for j in range(0, o):

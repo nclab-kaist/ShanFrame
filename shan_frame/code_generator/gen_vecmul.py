@@ -11,13 +11,13 @@ def generate_vec_mul_content(func: VecMulFunc) -> str:
     loop_start = indent_lines("""
         for (int c2o2_loop_count = row_count / 2; c2o2_loop_count > 0; c2o2_loop_count--){""", indent)
     indent += 1
-    loop_body = mac_setup(2, func.col_num, func.col_size, indent)
-    loop_body += mac_body(2, func.col_num, func.col_size, indent)
+    loop_body = mac_setup(func.col_num, 2, func.col_size, indent)
+    loop_body += mac_body(func.col_num, 2, func.col_size, indent)
     loop_body += indent_lines(f"""
         ip_a0 += {func.col_size};
         ip_a1 += {func.col_size};
     """, indent)
-    loop_body += mac_output(2, func.col_num, func.output_layout, indent)
+    loop_body += mac_output(func.col_num, 2, func.output_layout, indent)
     indent -= 1
     loop_end = indent_lines("}", indent)
     # add c1o2 block if row count is odd
@@ -25,9 +25,9 @@ def generate_vec_mul_content(func: VecMulFunc) -> str:
         if (row_count %2) {
     """, indent)
     indent += 1
-    c1_block_body = mac_setup(1, func.col_num, func.col_size, indent)
-    c1_block_body += mac_body(1, func.col_num, func.col_size, indent)
-    c1_block_body += mac_output(1, func.col_num, func.output_layout, indent)
+    c1_block_body = mac_setup(func.col_num, 1, func.col_size, indent)
+    c1_block_body += mac_body(func.col_num, 1, func.col_size, indent)
+    c1_block_body += mac_output(func.col_num, 1, func.output_layout, indent)
     indent -= 1
     c1_block_end = indent_lines("}", indent)
     return setup + loop_start + loop_body + loop_end + c1_block_start + c1_block_body + c1_block_end
