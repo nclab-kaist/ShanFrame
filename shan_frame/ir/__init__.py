@@ -70,7 +70,7 @@ class Tensor:
     src_op: int = -1
     dst_op: set[int]
     layout: DataLayout = DataLayout.HWC
-    addr: int = 0
+    addr: int = -1
     # pre-padding
     prepad_h: int = 0
     prepad_w: int = 0

@@ -1,3 +1,6 @@
+from .utils import buffer_name, indent_lines
+from .gen_minorop import generate_minor_declare, generate_minor_def
+from .gen_intrinsics import generate_intrin
 from .gen_vecmul import generate_vec_mul_def
 from .gen_ch_conv import generate_ch_conv_def
 from .output_code import OutputCode
@@ -21,6 +24,8 @@ class CodeGenerator:
     kernel_file_name = "kernels"
     intrin_file_name = "intrinsics"
     const_file_name = "model_const"
+    inference_file_name = "inference"
+    inference_input_var = "input"
     
     def __init__(self, output_dir: str) -> None:
         self.output_dir = output_dir
@@ -35,15 +40,21 @@ class CodeGenerator:
         file_path = os.path.join(self.output_dir, self.include_dir, f"{name}.h")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, "w") as f:
+            f.write(f"#ifndef {name.upper()}_H\n")
+            f.write(f"#define {name.upper()}_H\n")
             f.writelines(lines)
+            f.write(f"#endif\n")
         
-    def generate(self, model: Model) -> None:
-        output_code = OutputCode(self.output_dir)
+    def generate(self, model: Model, peak_mem: int) -> None:
+        output_code = OutputCode(self.output_dir, peak_mem)
         self.generate_kernel(model, output_code)
+        self.output_inference(model, output_code)
         self.output_kernel(output_code)
         self.output_ch_conv(output_code)
         self.output_vec_mul(output_code)
         self.output_const(output_code)
+        self.output_intrin()
+        self.output_minor_op()
         
         raise NotImplementedError()
 
@@ -51,13 +62,13 @@ class CodeGenerator:
         for op in model.operators.values():
             match op:
                 case Conv2D():
-                    generate_conv2d(model, op, output_code)
+                    generate_conv2d(self.inference_input_var, model, op, output_code)
                 case DepthConv2D():
-                    generate_depthwise_conv2d(model, op, output_code)
+                    generate_depthwise_conv2d(self.inference_input_var, model, op, output_code)
                 case Add():
                     generate_add(model, op, output_code)
                 case AvgPool2D():
-                    generate_avgpool(model, op, output_code)
+                    generate_avgpool(self.inference_input_var, model, op, output_code)
                 case Reshape():
                     pass
                 case _:
@@ -132,3 +143,39 @@ class CodeGenerator:
                 data_str = ", ".join(elements)
                 lines.append(f"{declare} = {{{data_str}}};\n")
         self.write_include(self.const_file_name, lines)
+        
+    def output_inference(self, model: Model, output_code: OutputCode) -> None:
+        # generate include file
+        lines = [f"#include <stdint.h>\n"]
+        inference_declare = f"int8_t *{self.inference_file_name}(int8_t *{self.inference_input_var})"
+        lines.append(f"{inference_declare};\n")
+        self.write_include(self.inference_file_name, lines)
+        # generate source file
+        lines = [
+            f"#include <stdint.h>\n",
+            f"#include \"{self.inference_file_name}.h\"\n",
+            f"#include \"{self.minor_op_file_name}.h\"\n",
+            f"#include \"{self.const_file_name}.h\"\n",
+            f"#include \"{self.kernel_file_name}.h\"\n",
+            f"int8_t {buffer_name()}[{output_code.mem_size}];\n"
+        ]
+        last_op = next(reversed(model.operators.values()))
+        output_addr = model.tensors[last_op.output_idx].addr
+        output = f"{buffer_name()}[{output_addr}]"
+        content = f"{inference_declare}{{\n"
+        indent = 1
+        for idx, kernel in output_code.kernels.items():
+            content += indent_lines(f"{kernel.call};", indent)
+        content += indent_lines(f"return {output};", indent)
+        content += "}\n"
+        lines.append(content)
+        self.write_src(self.inference_file_name, lines)
+        
+
+    def output_intrin(self) -> None:
+        self.write_include(self.intrin_file_name, [generate_intrin()])
+        
+    def output_minor_op(self) -> None:
+        self.write_include(self.minor_op_file_name, [generate_minor_declare()])
+        self.write_src(self.minor_op_file_name, [generate_minor_def()])
+        

@@ -86,13 +86,15 @@ class ChConvFunc:
 
 class OutputCode:
     root_dir: str
+    mem_size: int
     kernels: dict[int, KernelFunc]
     vec_mul: dict[tuple[int, int], VecMulFunc]
     ch_conv: dict[tuple[int, int, bool], ChConvFunc]
     const_tensors: list[Tensor]
     
-    def __init__(self, root_dir: str) -> None:
+    def __init__(self, root_dir: str, mem_size: int) -> None:
         self.root_dir = root_dir
+        self.mem_size = mem_size
         self.kernels = {}
         self.vec_mul = {}
         self.ch_conv = {}

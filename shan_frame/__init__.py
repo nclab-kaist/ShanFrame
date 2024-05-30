@@ -12,6 +12,6 @@ def compile_model_at(
     (model, sram_usage)= optimizer.optimize(1.0)
     
     code_generator = CodeGenerator(output_dir)
-    code_generator.generate(model)
+    code_generator.generate(model, sram_usage)
     
     return sram_usage

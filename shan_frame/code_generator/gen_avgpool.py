@@ -3,13 +3,16 @@ from ..ir import DataLayout, Model
 from ..ir.operator import AvgPool2D
 from .output_code import OutputCode, KernelFunc
 
-def generate_avgpool(model: Model, op: AvgPool2D, output_code: OutputCode) -> None:
+def generate_avgpool(input_var: str, model: Model, op: AvgPool2D, output_code: OutputCode) -> None:
     input = model.tensors[op.input_idx]
     output = model.tensors[op.output_idx]
     
     assert input.layout == output.layout == DataLayout.HWC
     
-    input_addr = f"&{buffer_name()}[{input.addr}]"
+    if input.addr >= 0:
+        input_addr = f"&{buffer_name()}[{input.addr}]"
+    else:
+        input_addr = input_var
     output_addr = f"&{buffer_name()}[{output.addr}]"
     
     func_name = "avg_pooling"

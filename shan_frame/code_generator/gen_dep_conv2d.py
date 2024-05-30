@@ -33,7 +33,7 @@ def generate_content(model: Model, op: DepthConv2D, output_code: OutputCode) -> 
     return content
     
 
-def generate_depthwise_conv2d(model: Model, op: DepthConv2D, output_code: OutputCode) -> None:
+def generate_depthwise_conv2d(input_var: str, model: Model, op: DepthConv2D, output_code: OutputCode) -> None:
     bias = model.tensors[op.bias_idx]
     input = model.tensors[op.input_idx]
     weight = model.tensors[op.weight_idx]
@@ -43,7 +43,10 @@ def generate_depthwise_conv2d(model: Model, op: DepthConv2D, output_code: Output
     
     hwc_to_chw(weight)
     func_name = f"layer{op.idx}_depthwise_conv2d"
-    input_addr = f"{buffer_name()}[{input.addr}]"
+    if input.addr >= 0:
+        input_addr = f"&{buffer_name()}[{input.addr}]"
+    else:
+        input_addr = input_var
     output_addr = f"{buffer_name()}[{output.addr}]"
     buffer_addr = f"{buffer_name()}[{op.buffer_addr}]"
     

@@ -20,7 +20,7 @@ def gen_content(model: Model, op: Conv2D, output_code: OutputCode) -> str:
     return content
 
 
-def generate_conv2d(model: Model, op: Conv2D, output_code: OutputCode):
+def generate_conv2d(input_var: str, model: Model, op: Conv2D, output_code: OutputCode):
     weight = model.tensors[op.weight_idx]
     if weight.dim_h == weight.dim_w == 1:
         return generate_1x1conv2d(op, model, output_code)
@@ -45,7 +45,10 @@ def generate_conv2d(model: Model, op: Conv2D, output_code: OutputCode):
         (f"const float {scales_name(op.idx)}[]", scales)
     ]
     func_name = kernel_name(op.idx, "conv2d")
-    input_addr = f"&{buffer_name()}[{input.addr}]"
+    if input.addr >= 0:
+        input_addr = f"&{buffer_name()}[{input.addr}]"
+    else:
+        input_addr = input_var
     output_addr = f"&{buffer_name()}[{output.addr}]"
     buffer_addr = f"&{buffer_name()}[{op.buffer_addr}]"
     func.call = f"{func_name}({input_addr}, {output_addr}, {buffer_addr})"
