@@ -88,7 +88,7 @@ class OutputCode:
     root_dir: str
     mem_size: int
     kernels: dict[int, KernelFunc]
-    vec_mul: dict[tuple[int, int], VecMulFunc]
+    vec_mul: dict[tuple[int, int, DataLayout], VecMulFunc]
     ch_conv: dict[tuple[int, int, bool], ChConvFunc]
     const_tensors: list[Tensor]
     
@@ -101,10 +101,10 @@ class OutputCode:
         self.const_tensors = []
     
     def add_vec_mul(self, col_num: int, col_size: int, output_layout: DataLayout) -> VecMulFunc:
-        vec_mul = self.vec_mul.get((col_num, col_size))
+        vec_mul = self.vec_mul.get((col_num, col_size, output_layout))
         if vec_mul is not None:
             return vec_mul
-        vec_mul = self.vec_mul[(col_num, col_size)] = VecMulFunc(
+        vec_mul = self.vec_mul[(col_num, col_size, output_layout)] = VecMulFunc(
             col_num, col_size, output_layout)
         return vec_mul
     
