@@ -73,7 +73,7 @@ class ChConvFunc:
         args = ", ".join([
             "const int8_t *input", "int8_t *output", "const int8_t *ksrc",
             "const float scale", "const int32_t contrib", "const int8_t out_offset",
-            "const int row_size", "const int ch_offset", "const int out_w", "const int out_h"
+            "const int input_w", "const int ch_offset", "const int out_w", "const int out_h"
         ])
         return f"{ret}{name}({args})"
     

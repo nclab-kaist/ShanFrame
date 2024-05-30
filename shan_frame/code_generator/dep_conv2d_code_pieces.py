@@ -5,11 +5,16 @@ from .utils import indent_lines
 
 def chconv_setup(stride: int, rev: bool, indent: int) -> str:
     if rev:
-        return indent_lines(f"""const int8_t *input_col = input + (out_h - 1) * {stride} * row_size + out_w * {stride};
-            int8_t *out = output + (out_h * out_w) * ch_offset;""", indent)        
+        return indent_lines(f"""
+            const int8_t *input_col = input + (out_h - 1) * {stride} * input_w + out_w * {stride};
+            int8_t *out = output + (out_h * out_w) * ch_offset;
+        """, indent)        
     else:
-        return indent_lines("""const int8_t *input_col = input;
-            int8_t *out = output;""", indent)
+        return indent_lines(f"""
+            const int row_offset = input_w - out_w * {stride};
+            const int8_t *input_col = input;
+            int8_t *out = output;
+        """, indent)
         
 def chconv_mac_setup(stride: int, o: int, rev: bool, indent: int) -> str:
     content = ""
@@ -69,7 +74,7 @@ def chconv_k3x3_stride1_o2_mac(rev: bool, indent: int) -> str:
         sum0 = __SMLABB(c31, k31, sum0); // += 1*1
         sum1 = __SMLAD(c31, k20, sum1); // 1*0 + 3*2
         sum1 = __SMLATB(c20, k31, sum1); // += 2*1
-        cols_8b += row_size;
+        cols_8b += input_w;
         
         c3210 = arm_nn_read_q7x4(cols_8b);
         c20 = __SXTB16(c3210);
@@ -80,7 +85,7 @@ def chconv_k3x3_stride1_o2_mac(rev: bool, indent: int) -> str:
         sum1 = __SMLABT(c31, k31, sum1); // += 1 * 3
         sum1 = __SMLATB(c20, k64, sum1); // += 2 * 4
         sum1 = __SMLATB(c31, k75, sum1); // += 3 * 5
-        cols_8b += row_size;
+        cols_8b += input_w;
 
         c3210 = arm_nn_read_q7x4(cols_8b);
         c20 = __SXTB16(c3210);
@@ -99,7 +104,7 @@ def chconv_generic_mac(kernel_size: int, stride: int, rev: bool, indent: int) ->
     content = chconv_mac_setup(stride, 1, rev, indent)
     for i in range(0, kernel_size * kernel_size):
         if i % kernel_size == 0 and i != 0:
-            content += indent_lines(f"cols_8b += row_size;", indent)
+            content += indent_lines(f"cols_8b += input_w;", indent)
         content += indent_lines(
             f"sum0 += cols_8b[{i%kernel_size}] * ksrc[{i}];", indent)
     content += chconv_mac_output(1, rev, indent)
