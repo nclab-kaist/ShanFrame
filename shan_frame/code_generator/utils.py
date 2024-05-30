@@ -13,7 +13,9 @@ def concat_line(prev: str, next: str, indent: int) -> str:
 
 def indent_lines(input: str, indent: int) -> str:
     indent_str = "    "
-    lines = [indent_str * indent + line.strip() + "\n" for line in input.split("\n")]
+    lines = [line.strip() for line in input.splitlines()]
+    lines = list(filter(lambda line: len(line) > 0, lines))
+    lines = [indent_str * indent + line + "\n" for line in lines]
     return "".join(lines)
 
 def effective_scale(input_scales: np.ndarray, weight_scales: np.ndarray, output_scales: np.ndarray) -> np.ndarray:
