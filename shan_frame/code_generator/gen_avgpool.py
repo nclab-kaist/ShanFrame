@@ -18,7 +18,7 @@ def generate_avgpool(input_var: str, model: Model, op: AvgPool2D, output_code: O
     func_name = "avg_pooling"
     args = ", ".join([
         input_addr, str(input.dim_h), str(input.dim_w), str(input.dim_c),
-        output_addr, str(output.dim_h), str(output.dim_w), str(output.dim_c),
+        output_addr, str(output.dim_h), str(output.dim_w),
         str(op.filter_h), str(op.filter_w)
     ])
     func = KernelFunc()

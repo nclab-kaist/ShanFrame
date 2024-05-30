@@ -91,6 +91,7 @@ class CodeGenerator:
                 f"#include \"{self.vec_mul_file_name}.h\"\n",
                 f"#include \"{self.ch_conv_file_name}.h\"\n",
                 f"#include \"{self.kernel_file_name}.h\"\n",
+                f"#include \"{self.intrin_file_name}.h\"\n",
             ]
             for const_name, _ in kernel.const:
                 lines.append(f"extern {const_name};\n")
@@ -177,5 +178,7 @@ class CodeGenerator:
         
     def output_minor_op(self) -> None:
         self.write_include(self.minor_op_file_name, [generate_minor_declare()])
-        self.write_src(self.minor_op_file_name, [generate_minor_def()])
+        lines = [f"#include \"{self.intrin_file_name}.h\"\n"]
+        lines.append(generate_minor_def())
+        self.write_src(self.minor_op_file_name, lines)
         

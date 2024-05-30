@@ -31,11 +31,11 @@ def chconv_mac_setup(stride: int, o: int, rev: bool, indent: int) -> str:
 def chconv_k3x3_mac_setup(indent: int) -> str:
     return indent_lines(f"""
         int32_t k3210, k20, k31, c3210, c20, c31, c4;
-        k3210 = arm_nn_read_q7x4(ksrc);
+        k3210 = read_int8x4(ksrc);
         k20 = __SXTB16(k3210);
         k31 = __SXTB16_RORn(k3210, 8);
         int32_t k7654, k64, k75, ka8;
-        k7654 = arm_nn_read_q7x4(ksrc + 4);
+        k7654 = read_int8x4(ksrc + 4);
         k64 = __SXTB16(k7654);
         k75 = __SXTB16_RORn(k7654, 8);
         ka8 = ksrc[8];""", indent)
@@ -67,7 +67,7 @@ def chconv_mac_output(o: int, rev: bool, indent: int) -> str:
 def chconv_k3x3_stride1_o2_mac(rev: bool, indent: int) -> str:
     content = chconv_mac_setup(1, 2, rev, indent)
     content += indent_lines(f"""
-        c3210 = arm_nn_read_q7x4(cols_8b);
+        c3210 = read_int8x4(cols_8b);
         c20 = __SXTB16(c3210);
         c31 = __SXTB16_RORn(c3210, 8);
         sum0 = __SMLAD(c20, k20, sum0); // 0*0 + 2*2
@@ -76,7 +76,7 @@ def chconv_k3x3_stride1_o2_mac(rev: bool, indent: int) -> str:
         sum1 = __SMLATB(c20, k31, sum1); // += 2*1
         cols_8b += input_w;
         
-        c3210 = arm_nn_read_q7x4(cols_8b);
+        c3210 = read_int8x4(cols_8b);
         c20 = __SXTB16(c3210);
         c31 = __SXTB16_RORn(c3210, 8);
         sum0 = __SMLABT(c20, k31, sum0); // += 0 * 3
@@ -87,7 +87,7 @@ def chconv_k3x3_stride1_o2_mac(rev: bool, indent: int) -> str:
         sum1 = __SMLATB(c31, k75, sum1); // += 3 * 5
         cols_8b += input_w;
 
-        c3210 = arm_nn_read_q7x4(cols_8b);
+        c3210 = read_int8x4(cols_8b);
         c20 = __SXTB16(c3210);
         c31 = __SXTB16_RORn(c3210, 8);
         sum0 = __SMLABT(c20, k64, sum0); // += 0 * 6
@@ -103,7 +103,7 @@ def chconv_k3x3_stride1_o2_mac(rev: bool, indent: int) -> str:
 def chconv_k3x3_stride2_o2_mac(rev: bool, indent: int) -> str:
     content = chconv_mac_setup(1, 2, rev, indent)
     content += indent_lines(f"""         
-        c3210 = arm_nn_read_q7x4(cols_8b);
+        c3210 = read_int8x4(cols_8b);
         c20 = __SXTB16(c3210);
         c31 = __SXTB16_RORn(c3210, 8);
         c4 = cols_8b[4];
@@ -114,7 +114,7 @@ def chconv_k3x3_stride2_o2_mac(rev: bool, indent: int) -> str:
         sum1 = __SMLABT(c4, k20, sum1);
         cols_8b += input_w;
         
-        c3210 = arm_nn_read_q7x4(cols_8b);
+        c3210 = read_int8x4(cols_8b);
         c20 = __SXTB16(c3210);
         c31 = __SXTB16_RORn(c3210, 8);
         c4 = cols_8b[4];
@@ -126,7 +126,7 @@ def chconv_k3x3_stride2_o2_mac(rev: bool, indent: int) -> str:
         sum1 = __SMLABB(c4, k75, sum1);
         cols_8b += input_w;
         
-        c3210 = arm_nn_read_q7x4(cols_8b);
+        c3210 = read_int8x4(cols_8b);
         c20 = __SXTB16(c3210);
         c31 = __SXTB16_RORn(c3210, 8);
         c4 = cols_8b[4];
@@ -153,11 +153,11 @@ def chconv_k5x5_stride1_o2_mac(indent: int) -> str:
     for i in range(0, 5):
         content += indent_lines(f"""
             // row {i}
-            c3210 = arm_nn_read_q7x4(cols_8b);
+            c3210 = read_int8x4(cols_8b);
             c20 = __SXTB16(c3210);
             c31 = __SXTB16_RORn(c3210, 8);
             memcpy(cols_8b+4, &c64, 2); // c54 actually
-            k3210 = arm_nn_read_q7x4(k);
+            k3210 = read_int8x4(k);
             k20 = __SXTB16(k3210);
             k31 = __SXTB16_RORn(k3210, 8);
             k4 = k[4];
@@ -181,13 +181,13 @@ def chconv_k5x5_stride2_o2_mac(indent: int) -> str:
     for i in range(0, 5):
         content += indent_lines(f"""
             // row {i}
-            c3210 = arm_nn_read_q7x4(cols_8b);
+            c3210 = read_int8x4(cols_8b);
             c20 = __SXTB16(c3210);
             c31 = __SXTB16_RORn(c3210, 8);
-            c7654 = arm_nn_read_q7x4(cols_8b);
+            c7654 = read_int8x4(cols_8b);
             c64 = __SXTB16(c7654);
             c75 = __SXTB16_RORn(7654, 8);
-            k3210 = arm_nn_read_q7x4(k);
+            k3210 = read_int8x4(k);
             k20 = __SXTB16(k3210);
             k31 = __SXTB16_RORn(k3210, 8);
             k4 = k[4];
@@ -219,16 +219,16 @@ def chconv_k7x7_stride1_o2_mac(indent: int) -> str:
     for i in range(0, 7):
         content += indent_lines(f"""
             // row {i}
-            c3210 = arm_nn_read_q7x4(cols_8b);
+            c3210 = read_int8x4(cols_8b);
             c20 = __SXTB16(c3210);
             c31 = __SXTB16_RORn(c3210, 8);
-            c7654 = arm_nn_read_q7x4(cols_8b);
+            c7654 = read_int8x4(cols_8b);
             c64 = __SXTB16(c7654);
             c75 = __SXTB16_RORn(c7654, 8);
-            k3210 = arm_nn_read_q7x4(k);
+            k3210 = read_int8x4(k);
             k20 = __SXTB16(k3210);
             k31 = __SXTB16_RORn(k3210, 8);
-            k7654 = arm_nn_read_q7x4(k);
+            k7654 = read_int8x4(k);
             k64 = __SXTB16(k7654);
             k75 = __SXTB16_RORn(k7654, 8);
             sum0 = __SMLAD(c20, k20, sum0); // 00 22
@@ -254,17 +254,17 @@ def chconv_k7x7_stride2_o2_mac(indent: int) -> str:
     for i in range(0, 7):
         content += indent_lines(f"""
             // row {i}
-            c3210 = arm_nn_read_q7x4(cols_8b);
+            c3210 = read_int8x4(cols_8b);
             c20 = __SXTB16(c3210);
             c31 = __SXTB16_RORn(c3210, 8);
-            c7654 = arm_nn_read_q7x4(cols_8b);
+            c7654 = read_int8x4(cols_8b);
             c64 = __SXTB16(c7654);
             c75 = __SXTB16_RORn(c7654, 8);
             c8 = cols_8b[8];
-            k3210 = arm_nn_read_q7x4(k);
+            k3210 = read_int8x4(k);
             k20 = __SXTB16(k3210);
             k31 = __SXTB16_RORn(k3210, 8);
-            k7654 = arm_nn_read_q7x4(k);
+            k7654 = read_int8x4(k);
             k64 = __SXTB16(k7654);
             k75 = __SXTB16_RORn(k7654, 8);
             sum0 = __SMLAD(c20, k20, sum0); // 00 22

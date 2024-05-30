@@ -36,15 +36,15 @@ def mac_setup(c: int, o: int, col_size: int, indent: int) -> str:
 
 def c2o1_mac_4(indent: int) -> str:
     return indent_lines("""
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val1 = read_int8x4_ia(&ip_b0);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);
         val1 = __SXTB16_RORn(val1, 8);
         val0 = __SXTB16_RORn(val0, 8);
         ch_0_out_0 = __SMLAD(val3, val2, ch_0_out_0);
         ch_0_out_0 = __SMLAD(val0, val1, ch_0_out_0);
-        val0 = arm_nn_read_q7x4_ia(&ip_a1);
+        val0 = read_int8x4_ia(&ip_a1);
         val3 = __SXTB16(val0);
         val0 = __SXTB16_RORn(val0, 8);
         ch_1_out_0 = __SMLAD(val3, val2, ch_1_out_0);
@@ -53,16 +53,16 @@ def c2o1_mac_4(indent: int) -> str:
 
 def c2o2_mac_4(is_head: bool, is_tail: bool, indent: int) -> str:
     mac_head = indent_lines("""
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val1 = read_int8x4_ia(&ip_b0);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);
-        val4 = arm_nn_read_q7x4_ia(&ip_b1);""" if is_head else """
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val4 = read_int8x4_ia(&ip_b1);""" if is_head else """
+        val1 = read_int8x4_ia(&ip_b0);
         ch_1_out_1 = __SMLAD(val0, val4, ch_1_out_1);
-        val4 = arm_nn_read_q7x4_ia(&ip_b1);
+        val4 = read_int8x4_ia(&ip_b1);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);""", indent)
     mac_body = indent_lines("""
         val1 = __SXTB16_RORn(val1, 8);
@@ -73,7 +73,7 @@ def c2o2_mac_4(is_head: bool, is_tail: bool, indent: int) -> str:
         val4 = __SXTB16_RORn(val4, 8);
         ch_0_out_1 = __SMLAD(val3, val5, ch_0_out_1);
         ch_0_out_1 = __SMLAD(val0, val4, ch_0_out_1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a1);
+        val0 = read_int8x4_ia(&ip_a1);
         val3 = __SXTB16(val0);
         val0 = __SXTB16_RORn(val0, 8);
         ch_1_out_0 = __SMLAD(val3, val2, ch_1_out_0);
@@ -87,17 +87,17 @@ def c2o2_mac_4(is_head: bool, is_tail: bool, indent: int) -> str:
 
 def c2o1_mac_3(indent: int) -> str:
     return indent_lines(f"""
-        val1 = arm_nn_read_q7x4(ip_b0);
+        val1 = read_int8x4(ip_b0);
         ip_b0 += 3;
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4(ip_a0);
+        val0 = read_int8x4(ip_a0);
         ip_a0 += 3;
         val3 = __SXTB16(val0);
         val1 = __SXTB16_RORn(val1, 8);
         val0 = __SXTB16_RORn(val0, 8);
         ch_0_out_0 = __SMLAD(val3, val2, ch_0_out_0);
         ch_0_out_0 = __SMLABB(val0, val1, ch_0_out_0);
-        val0 = arm_nn_read_q7x4(ip_a1);
+        val0 = read_int8x4(ip_a1);
         ip_a1 += 3;
         val3 = __SXTB16(val0);
         val0 = __SXTB16_RORn(val0, 8);
@@ -108,21 +108,21 @@ def c2o1_mac_3(indent: int) -> str:
 def c2o2_mac_3(is_head: bool, is_tail: bool, indent: int) -> str:
     # XXX: if not is_head, the previous mac must be mac_4
     mac_head = indent_lines("""
-        val1 = arm_nn_read_q7x4(ip_b0);
+        val1 = read_int8x4(ip_b0);
         ip_b0 += 3;
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4(ip_a0);
+        val0 = read_int8x4(ip_a0);
         ip_a0 += 3;
         val3 = __SXTB16(val0);
-        val4 = arm_nn_read_q7x4(ip_b1);
+        val4 = read_int8x4(ip_b1);
         ip_b1 += 3;""" if is_head else """
-        val1 = arm_nn_read_q7x4(ip_b0);
+        val1 = read_int8x4(ip_b0);
         ip_b0 += 3;
         ch_1_out_1 = __SMLAD(val0, val4, ch_1_out_1);
-        val4 = arm_nn_read_q7x4(ip_b1);
+        val4 = read_int8x4(ip_b1);
         ip_b1 += 3;
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4(ip_a0);
+        val0 = read_int8x4(ip_a0);
         ip_a0 += 3;
         val3 = __SXTB16(val0);""", indent)
     mac_body = indent_lines("""
@@ -134,7 +134,7 @@ def c2o2_mac_3(is_head: bool, is_tail: bool, indent: int) -> str:
         val4 = __SXTB16_RORn(val4, 8);
         ch_0_out_1 = __SMLAD(val3, val5, ch_0_out_1);
         ch_0_out_1 = __SMLABB(val0, val4, ch_0_out_1);
-        val0 = arm_nn_read_q7x4(ip_a1);
+        val0 = read_int8x4(ip_a1);
         ip_a1 += 3;
         val3 = __SXTB16(val0);
         val0 = __SXTB16_RORn(val0, 8);
@@ -150,10 +150,10 @@ def c2o2_mac_3(is_head: bool, is_tail: bool, indent: int) -> str:
 
 def c2o1_mac_2(indent: int) -> str:
     return indent_lines(f"""
-        val1 = arm_nn_read_q7x4(ip_b0);
+        val1 = read_int8x4(ip_b0);
         ip_b0 += 2;
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4(ip_a0);
+        val0 = read_int8x4(ip_a0);
         ip_a0 += 2;
         val3 = __SXTB16(val0);    
         val1 = __SXTB16_RORn(val1, 8);
@@ -161,7 +161,7 @@ def c2o1_mac_2(indent: int) -> str:
         val1 = __PKHBT_LSLn(val1, val2, 16); //b00 b01
         val0 = __PKHBT_LSLn(val0, val3, 16); //a00 a01
         ch_0_out_0 = __SMLAD(val0, val1, ch_0_out_0);
-        val2 = arm_nn_read_q7x4(ip_a1);
+        val2 = read_int8x4(ip_a1);
         ip_a1 += 2;
         val3 = __SXTB16(val0);
         val2 = __SXTB16_RORn(val2, 8);
@@ -172,21 +172,21 @@ def c2o1_mac_2(indent: int) -> str:
 def c2o2_mac_2(is_head: bool, is_tail: bool, indent: int) -> str:
     # XXX: if not is_head, the previous mac must be mac_4
     mac_head = indent_lines("""
-        val1 = arm_nn_read_q7x4(ip_b0);
+        val1 = read_int8x4(ip_b0);
         ip_b0 += 2;
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4(ip_a0);
+        val0 = read_int8x4(ip_a0);
         ip_a0 += 2;
         val3 = __SXTB16(val0);
-        val4 = arm_nn_read_q7x4(ip_b1);
+        val4 = read_int8x4(ip_b1);
         ip_b1 += 2;""" if is_head else """
-        val1 = arm_nn_read_q7x4(ip_b0);
+        val1 = read_int8x4(ip_b0);
         ip_b0 += 2;
         ch_1_out_1 = __SMLAD(val0, val4, ch_1_out_1);
-        val4 = arm_nn_read_q7x4(ip_b1);
+        val4 = read_int8x4(ip_b1);
         ip_b1 += 2;
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4(ip_a0);
+        val0 = read_int8x4(ip_a0);
         ip_a0 += 2;
         val3 = __SXTB16(val0);""", indent)
     mac_body = indent_lines("""
@@ -199,7 +199,7 @@ def c2o2_mac_2(is_head: bool, is_tail: bool, indent: int) -> str:
         val4 = __SXTB16_RORn(val4, 8);
         val4 = __PKHBT_LSLn(val4, val5, 16); //b10, b11
         ch_0_out_1 = __SMLAD(val0, val4, ch_1_out_1);
-        val2 = arm_nn_read_q7x4(ip_a1);
+        val2 = read_int8x4(ip_a1);
         ip_a1 += 2;
         val3 = __SXTB16(val0);
         val2 = __SXTB16_RORn(val2, 8);
@@ -273,9 +273,9 @@ def mac_output(c: int, o: int, output_layout: DataLayout, indent: int) -> str:
 
 def c1o1_mac_4(indent: int) -> str:
     return indent_lines("""
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val1 = read_int8x4_ia(&ip_b0);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);
         val1 = __SXTB16_RORn(val1, 8);
         val0 = __SXTB16_RORn(val0, 8);
@@ -286,16 +286,16 @@ def c1o1_mac_4(indent: int) -> str:
 
 def c1o2_mac_4(is_head: bool, is_tail: bool, indent: int) -> str:
     mac_head = indent_lines("""
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val1 = read_int8x4_ia(&ip_b0);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);
-        val4 = arm_nn_read_q7x4_ia(&ip_b1);""" if is_head else """
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val4 = read_int8x4_ia(&ip_b1);""" if is_head else """
+        val1 = read_int8x4_ia(&ip_b0);
         ch_0_out_1 = __SMLAD(val0, val4, ch_0_out_1);
-        val4 = arm_nn_read_q7x4_ia(&ip_b1);
+        val4 = read_int8x4_ia(&ip_b1);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);""", indent)
     mac_body = indent_lines("""
         val1 = __SXTB16_RORn(val1, 8);
@@ -313,9 +313,9 @@ def c1o2_mac_4(is_head: bool, is_tail: bool, indent: int) -> str:
 
 def c1o1_mac_3(indent: int) -> str:
     return indent_lines("""
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val1 = read_int8x4_ia(&ip_b0);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);
         val1 = __SXTB16_RORn(val1, 8);
         val0 = __SXTB16_RORn(val0, 8);
@@ -327,16 +327,16 @@ def c1o1_mac_3(indent: int) -> str:
 def c1o2_mac_3(is_head: bool, is_tail: bool, indent: int) -> str:
     # XXX: if not is_head, the previous mac must be mac_4
     mac_head = indent_lines("""
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val1 = read_int8x4_ia(&ip_b0);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);
-        val4 = arm_nn_read_q7x4_ia(&ip_b1);""" if is_head else """
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val4 = read_int8x4_ia(&ip_b1);""" if is_head else """
+        val1 = read_int8x4_ia(&ip_b0);
         ch_0_out_1 = __SMLAD(val0, val4, ch_0_out_1);
-        val4 = arm_nn_read_q7x4_ia(&ip_b1);
+        val4 = read_int8x4_ia(&ip_b1);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);""", indent)
     mac_body = indent_lines("""
         val1 = __SXTB16_RORn(val1, 8);
@@ -354,9 +354,9 @@ def c1o2_mac_3(is_head: bool, is_tail: bool, indent: int) -> str:
 
 def c1o1_mac_2(indent: int) -> str:
     return indent_lines("""
-        val1 = arm_nn_read_q7x4_ia(&ip_b0);
+        val1 = read_int8x4_ia(&ip_b0);
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4_ia(&ip_a0);
+        val0 = read_int8x4_ia(&ip_a0);
         val3 = __SXTB16(val0);
         val1 = __SXTB16_RORn(val1, 8);
         val0 = __SXTB16_RORn(val0, 8);
@@ -368,21 +368,21 @@ def c1o1_mac_2(indent: int) -> str:
 def c1o2_mac_2(is_head: bool, is_tail: bool, indent: int) -> str:
     # XXX: if not is_head, the previous mac must be mac_4
     mac_head = indent_lines("""
-        val1 = arm_nn_read_q7x4(ip_b0);
+        val1 = read_int8x4(ip_b0);
         ip_b0 += 2;
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4(ip_a0);
+        val0 = read_int8x4(ip_a0);
         ip_a0 += 2;
         val3 = __SXTB16(val0);
-        val4 = arm_nn_read_q7x4(ip_b1);
+        val4 = read_int8x4(ip_b1);
         ip_b1 += 2;""" if is_head else """
-        val1 = arm_nn_read_q7x4(ip_b0);
+        val1 = read_int8x4(ip_b0);
         ip_b0 += 2;
         ch_0_out_1 = __SMLAD(val0, val4, ch_0_out_1);
-        val4 = arm_nn_read_q7x4(ip_b1);
+        val4 = read_int8x4(ip_b1);
         ip_b1 += 2;
         val2 = __SXTB16(val1);
-        val0 = arm_nn_read_q7x4(ip_a0);
+        val0 = read_int8x4(ip_a0);
         ip_a0 += 2;
         val3 = __SXTB16(val0);""", indent)
     mac_body = indent_lines("""
