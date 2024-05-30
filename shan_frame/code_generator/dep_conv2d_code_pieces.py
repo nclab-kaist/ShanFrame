@@ -206,6 +206,86 @@ def chconv_k5x5_stride2_o2_mac(indent: int) -> str:
     return content
 
 
+def chconv_k7x7_mac_setup(indent: int) -> str:
+    return indent_lines(f"""
+        int32_t k3210, k20, k31, k7654, k64, k75;
+        int32_t c3210, c20, c31, c7654, c75, c64, c8;
+    """, indent)
+
+
+def chconv_k7x7_stride1_o2_mac(indent: int) -> str:
+    content = chconv_mac_setup(1, 2, False, indent)
+    content += indent_lines("const int8_t *k = ksrc;", indent)
+    for i in range(0, 7):
+        content += indent_lines(f"""
+            // row {i}
+            c3210 = arm_nn_read_q7x4(cols_8b);
+            c20 = __SXTB16(c3210);
+            c31 = __SXTB16_RORn(c3210, 8);
+            c7654 = arm_nn_read_q7x4(cols_8b);
+            c64 = __SXTB16(c7654);
+            c75 = __SXTB16_RORn(c7654, 8);
+            k3210 = arm_nn_read_q7x4(k);
+            k20 = __SXTB16(k3210);
+            k31 = __SXTB16_RORn(k3210, 8);
+            k7654 = arm_nn_read_q7x4(k);
+            k64 = __SXTB16(k7654);
+            k75 = __SXTB16_RORn(k7654, 8);
+            sum0 = __SMLAD(c20, k20, sum0); // 00 22
+            sum0 = __SMLAD(c31, k31, sum0); // 11 33
+            sum0 = __SMLAD(c64, k64, sum0); // 66 44
+            sum0 = __SMLABB(c75, k75, sum0); // 55
+            
+            sum1 = __SMLAD(c31, k20, sum1); // 10 + 32
+            sum1 = __SMLATB(c20, k31, sum1); // 21
+            sum1 = __SMLABT(c64, k31, sum1); // 43
+            sum1 = __SMLAD(c75, k64, sum1); //76, 54
+            sum1 = __SMLATB(c64, k75, sum1); // 65
+            cols_8b += input_w;
+            k += 7;
+        """, indent)
+    content += chconv_mac_output(2, False, indent)
+    return content
+
+
+def chconv_k7x7_stride2_o2_mac(indent: int) -> str:
+    content = chconv_mac_setup(1, 2, False, indent)
+    content += indent_lines("const int8_t *k = ksrc;", indent)
+    for i in range(0, 7):
+        content += indent_lines(f"""
+            // row {i}
+            c3210 = arm_nn_read_q7x4(cols_8b);
+            c20 = __SXTB16(c3210);
+            c31 = __SXTB16_RORn(c3210, 8);
+            c7654 = arm_nn_read_q7x4(cols_8b);
+            c64 = __SXTB16(c7654);
+            c75 = __SXTB16_RORn(c7654, 8);
+            c8 = cols_8b[8];
+            k3210 = arm_nn_read_q7x4(k);
+            k20 = __SXTB16(k3210);
+            k31 = __SXTB16_RORn(k3210, 8);
+            k7654 = arm_nn_read_q7x4(k);
+            k64 = __SXTB16(k7654);
+            k75 = __SXTB16_RORn(k7654, 8);
+            sum0 = __SMLAD(c20, k20, sum0); // 00 22
+            sum0 = __SMLAD(c31, k31, sum0); // 11 33
+            sum0 = __SMLAD(c64, k64, sum0); // 66 44
+            sum0 = __SMLABB(c75, k75, sum0); // 55
+            
+            sum1 = __SMLATB(c20, k20, sum1); // 20
+            sum1 = __SMLATB(c31, k31, sum1); // 31
+            sum1 = __SMLABT(c64, k20, sum1); // 42
+            sum1 = __SMLATT(c75, k31, sum1); // 53
+            sum1 = __SMLATB(c64, k64, sum1); // 64
+            sum1 = __SMLATB(c75, k75, sum1); // 75
+            sum1 = __SMLABT( c8, k64, sum1); // 86
+            cols_8b += input_w;
+            k += 7;
+        """, indent)
+    content += chconv_mac_output(2, False, indent)
+    return content
+
+
 def chconv_generic_mac(kernel_size: int, stride: int, rev: bool, indent: int) -> str:
     content = chconv_mac_setup(stride, 1, rev, indent)
     for i in range(0, kernel_size * kernel_size):
@@ -234,8 +314,9 @@ def chconv_generic_content(kernel_size: int, stride: int, rev: bool, indent: int
 
 
 def chconv_preset_content(kernel_size: int, stride: int, rev: bool, indent: int) -> str:
-    content = chconv_setup(1, rev, indent)
+    content = chconv_setup(stride, rev, indent)
     match kernel_size:
+        case 7: content += chconv_k7x7_mac_setup(indent)
         case 5: content += chconv_k5x5_mac_setup(indent)
         case 3: content += chconv_k3x3_mac_setup(indent)
         case _: raise NotImplementedError()
@@ -244,6 +325,8 @@ def chconv_preset_content(kernel_size: int, stride: int, rev: bool, indent: int)
     content += indent_lines("for(int j = out_w/2; j > 0; j--){", indent)
     indent += 1
     match kernel_size, stride:
+        case 7, 2: content += chconv_k7x7_stride2_o2_mac(indent)
+        case 7, 1: content += chconv_k7x7_stride1_o2_mac(indent)
         case 5, 2: content += chconv_k5x5_stride2_o2_mac(indent)
         case 5, 1: content += chconv_k5x5_stride1_o2_mac(indent)
         case 3, 2: content += chconv_k3x3_stride2_o2_mac(rev, indent)
@@ -253,12 +336,12 @@ def chconv_preset_content(kernel_size: int, stride: int, rev: bool, indent: int)
     content += indent_lines("}", indent)
     content += indent_lines("if(out_w % 2 != 0){", indent)
     indent += 1
-    content += chconv_generic_mac(3, 1, rev, indent)
+    content += chconv_generic_mac(kernel_size, 1, rev, indent)
     indent -= 1
     update_symbol = "-" if rev else "+"
     content += indent_lines(f"""
         }}
-        input_col {update_symbol}= 2;""", indent)
+        input_col {update_symbol}= row_offset;""", indent)
     indent -= 1
     content += indent_lines("}", indent)
     return content
