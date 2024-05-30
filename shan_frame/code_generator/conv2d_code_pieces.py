@@ -649,8 +649,8 @@ def conv2d_1x1_by_row(input: Tensor, output: Tensor, output_code: OutputCode, in
             input_elem += {input.dim_c};
         """, indent)
     content += indent_lines(f"""
-        out = output + {out_start}
-        input_elem = input
+        out = output + {out_start};
+        input_elem = input;
         for(int out_h = 0; out_h < {output.dim_h}; out_h++){{
             for(int out_w = 0; out_w < {output.dim_w} / 2; out_w++){{
                 {o2_call};
@@ -785,7 +785,7 @@ def conv2d_window_slide(op: Conv2D, input: Tensor, weight: Tensor, output: Tenso
                 int cp_y = 0;
                 if(in_window_y < 0) {{
                     int pad_row = MIN(-in_window_y, {weight.dim_h});
-                    memset(window_row_buf, input_zero_pointt, {weight.dim_w * weight.dim_c} * pad_row);
+                    memset(window_row_buf, input_zero_point, {weight.dim_w * weight.dim_c} * pad_row);
                     window_row_buf += {weight.dim_w * weight.dim_c} * pad_row;
                     cp_y += pad_row;
                 }}
@@ -793,12 +793,12 @@ def conv2d_window_slide(op: Conv2D, input: Tensor, weight: Tensor, output: Tenso
                 int pad_tail = MAX(in_window_x + {weight.dim_w} - {input.dim_w}, 0);
                 int copy_size = MAX({weight.dim_w} - pad_head - pad_tail, 0);
                 for(; cp_y < {weight.dim_h}; cp_y++){{
-                    memset(window_row_buf, input_zero_pointt, pad_head * {input.dim_c});
+                    memset(window_row_buf, input_zero_point, pad_head * {input.dim_c});
                     window_row_buf += pad_head * {input.dim_c};
                     const int8_t *in_cp = input + (in_window_y + cp_y) * {input.dim_c * input.dim_w} + (in_window_x + pad_head) * {input.dim_c};
                     memcpy(window_row_buf, in_cp, copy_size * {input.dim_c});
                     window_row_buf += copy_size * {input.dim_c};
-                    memset(window_row_buf, input_zero_pointt, pad_tail * {input.dim_c});
+                    memset(window_row_buf, input_zero_point, pad_tail * {input.dim_c});
                     window_row_buf += pad_tail * {input.dim_c};
                 }}
                 col_buf += {weight.dim_h * weight.dim_w * weight.dim_c};

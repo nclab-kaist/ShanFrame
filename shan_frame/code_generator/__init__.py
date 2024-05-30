@@ -109,7 +109,7 @@ class CodeGenerator:
             
     def output_ch_conv(self, output_code: OutputCode) -> None:
         # generate header file
-        lines = [f"#include <stdint.h>"]
+        lines = [f"#include <stdint.h>\n"]
         for ch_conv in output_code.ch_conv.values():
             lines.append(f"{ch_conv.get_def()};\n")
         self.write_include(self.ch_conv_file_name, lines)
@@ -125,10 +125,10 @@ class CodeGenerator:
         self.write_src(self.ch_conv_file_name, lines)
             
     def output_const(self, output_code: OutputCode) -> None:
-        lines = ["#include <stdint.h>"]
+        lines = ["#include <stdint.h>\n"]
         for kernel in output_code.kernels.values():
             for declare, data in kernel.const:
                 elements = [str(element) for element in data.flatten()]
                 data_str = ", ".join(elements)
-                lines.append(f"{declare} = {{{elements}}};\n")
+                lines.append(f"{declare} = {{{data_str}}};\n")
         self.write_include(self.const_file_name, lines)

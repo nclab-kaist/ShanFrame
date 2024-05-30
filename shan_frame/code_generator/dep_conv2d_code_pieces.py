@@ -17,7 +17,7 @@ def chconv_mac_setup(stride: int, o: int, rev: bool, indent: int) -> str:
         content += indent_lines(f"""input_col -= {o * stride};
         const int8_t *cols_8b = input_col;""", indent)
     else:
-        return indent_lines(f"""const int8_t *cols_8b = input_col;
+        content += indent_lines(f"""const int8_t *cols_8b = input_col;
         input_col += {o * stride};""", indent)
     for i in range(0, o):
         content += indent_lines(f"int32_t sum{i} = contrib;", indent)
