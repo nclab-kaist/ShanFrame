@@ -47,8 +47,8 @@ def generate_depthwise_conv2d(input_var: str, model: Model, op: DepthConv2D, out
         input_addr = f"&{buffer_name()}[{input.addr}]"
     else:
         input_addr = input_var
-    output_addr = f"{buffer_name()}[{output.addr}]"
-    buffer_addr = f"{buffer_name()}[{op.buffer_addr}]"
+    output_addr = f"&{buffer_name()}[{output.addr}]"
+    buffer_addr = f"&{buffer_name()}[{op.buffer_addr}]"
     
     func = KernelFunc()
     func.call = f"{func_name}({input_addr}, {output_addr}, {buffer_addr})"

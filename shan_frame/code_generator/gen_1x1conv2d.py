@@ -164,7 +164,7 @@ def gen_overlap_content(idx: int, input: Tensor, output: Tensor, output_code: Ou
     input_start2 = 0
     out_start2 = 0
     h_l_num = 0
-    total_num = output.dim_h * output.dim_w * output.dim_c
+    total_num = output.dim_h * output.dim_w
     
     if input_floor <= output_floor and input_ceiling <= output_ceiling:
         # input is completely lower than output, high to low exec

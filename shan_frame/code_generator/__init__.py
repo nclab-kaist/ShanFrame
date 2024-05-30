@@ -162,7 +162,7 @@ class CodeGenerator:
         ]
         last_op = next(reversed(model.operators.values()))
         output_addr = model.tensors[last_op.output_idx].addr
-        output = f"{buffer_name()}[{output_addr}]"
+        output = f"&{buffer_name()}[{output_addr}]"
         content = f"{inference_declare}{{\n"
         indent = 1
         for idx, kernel in output_code.kernels.items():
