@@ -3,6 +3,7 @@ def generate_intrin() -> str:
 #ifndef SHANFRAME_INTRIN_H
 #define SHANFRAME_INTRIN_H
 #include <stdint.h>
+#include <string.h>
 
 #define MAX(a, b) ((a) < (b))? (b) : (a)
 #define MIN(a, b) ((a) < (b))? (a) : (b)
