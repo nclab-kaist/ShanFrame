@@ -13,7 +13,9 @@ def generate_content(model: Model, op: DepthConv2D, output_code: OutputCode) -> 
     output_ceiling = output.addr + output.mem_size()
     if not (input_ceiling <= output.addr or input.addr >= output_ceiling):
         # input output overlapped
-        assert output.addr <= input.addr and (input.addr - output.addr) % input.dim_c == 0
+        # print(f"({input.addr}, {input_ceiling}) -> ({output.addr}, {output_ceiling})")
+        assert input.layout == DataLayout.HWC and output.layout == DataLayout.HWC and (
+            input.addr - output.addr) % input.dim_c == 0
     
     pad_input = op.pad_h != 0 or op.pad_w != 0
     pad_output = output.prepad_h != 0 or output.prepad_w != 0
