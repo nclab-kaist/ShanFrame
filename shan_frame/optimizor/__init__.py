@@ -39,7 +39,7 @@ class Optimizer:
 
             # try to pre-pad input
             # XXX: This is assuming pre-padding has no interference with overlapping
-            if op_idx != 0 and (op.pad_h != 0 or op.pad_w != 0):
+            if (not op.io_overlap) and op_idx != 0 and (op.pad_h != 0 or op.pad_w != 0):
                 input_tensor = self.model.tensors[op.input_idx]
                 input_tensor.prepad_h, input_tensor.prepad_w = op.pad_h, op.pad_w
                 op.pad_h, op.pad_w = 0, 0
