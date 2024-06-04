@@ -659,6 +659,7 @@ def conv2d_1x1_by_row(input: Tensor, output: Tensor, output_code: OutputCode, in
                 input_elem += 2 * {input.dim_c};
             }}
             {o1_cleanup}
+            out += 2 * {output.prepad_w} * out_update;
         }}
     """, indent)
     return content
