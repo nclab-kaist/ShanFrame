@@ -55,8 +55,6 @@ class CodeGenerator:
         self.output_const(output_code)
         self.output_intrin()
         self.output_minor_op()
-        
-        raise NotImplementedError()
 
     def generate_kernel(self, model: Model, output_code: OutputCode) -> None:
         for op in model.operators.values():
