@@ -138,11 +138,14 @@ class CodeGenerator:
             
     def output_const(self, output_code: OutputCode) -> None:
         lines = ["#include <stdint.h>\n"]
+        const_size = 0
         for kernel in output_code.kernels.values():
             for declare, data in kernel.const:
+                const_size += data.size * data.itemsize
                 elements = [str(element) for element in data.flatten()]
                 data_str = ", ".join(elements)
                 lines.append(f"{declare} = {{{data_str}}};\n")
+        lines.insert(0, f"//total const size: {const_size}\n")
         self.write_include(self.const_file_name, lines)
         
     def output_inference(self, model: Model, output_code: OutputCode) -> None:
