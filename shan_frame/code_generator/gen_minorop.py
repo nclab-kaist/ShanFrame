@@ -14,6 +14,7 @@ void avg_pooling(
 def generate_minor_def() -> str:
     return """
 #include <stdint.h>
+#include <math.h>
 
 void elementwise_add(int size, 
         const int8_t* input1_data, const float input1_scale, const float input1_zero,
