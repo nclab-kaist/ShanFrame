@@ -40,14 +40,19 @@ class Optimizer:
             # try to pre-pad input
             # XXX: This is assuming pre-padding has no interference with overlapping
             if (not op.io_overlap) and op_idx != 0 and (op.pad_h != 0 or op.pad_w != 0):
-                input_tensor = self.model.tensors[op.input_idx]
-                input_tensor.prepad_h, input_tensor.prepad_w = op.pad_h, op.pad_w
-                op.pad_h, op.pad_w = 0, 0
-                self.set_data_layout()
-                current_peak_mem = self.mem_scheduler.schedule(self.model)
-                if current_peak_mem > self.min_peak_mem_usage * sram_scale:
-                    op.pad_h, op.pad_w = input_tensor.prepad_h, input_tensor.prepad_w
-                    input_tensor.prepad_h, input_tensor.prepad_w = 0, 0
+                input = self.model.tensors[op.input_idx]
+                if isinstance(op, DepthConv2D):
+                    after_pad_size = (input.dim_h + 2 * op.pad_h) * (input.dim_w + 2 * op.pad_w)
+                    ch_size = input.dim_h * input.dim_w
+                    ch_pad_size = after_pad_size - ch_size
+                    if ch_pad_size < ch_size:
+                        input.prepad_h, input.prepad_w = op.pad_h, op.pad_w
+                        op.pad_h, op.pad_w = 0, 0
+                        self.set_data_layout()
+                        current_peak_mem = self.mem_scheduler.schedule(self.model)
+                        if current_peak_mem > self.min_peak_mem_usage * sram_scale:
+                            op.pad_h, op.pad_w = input.prepad_h, input.prepad_w
+                            input.prepad_h, input.prepad_w = 0, 0
 
         self.set_data_layout()
         final_peak_mem = self.mem_scheduler.schedule(self.model)
