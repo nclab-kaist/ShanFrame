@@ -156,7 +156,7 @@ def chconv_k5x5_stride1_o2_mac(indent: int) -> str:
             c3210 = read_int8x4(cols_8b);
             c20 = __SXTB16(c3210);
             c31 = __SXTB16_RORn(c3210, 8);
-            memcpy(cols_8b+4, &c64, 2); // c54 actually
+            memcpy(&c64, cols_8b+4, 2); // c54 actually
             k3210 = read_int8x4(k);
             k20 = __SXTB16(k3210);
             k31 = __SXTB16_RORn(k3210, 8);
